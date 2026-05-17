@@ -323,6 +323,9 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             app.manage(MemoStore::new(data_dir)?);
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_title("")?;
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

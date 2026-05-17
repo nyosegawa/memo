@@ -179,7 +179,7 @@ button {
 
 .memo-row {
   display: grid;
-  grid-template-rows: 21px 18px 18px;
+  grid-template-rows: 23px 18px;
   width: 100%;
   min-width: 0;
   margin: 0 0 3px;
@@ -202,7 +202,7 @@ button {
 }
 
 .memo-title,
-.memo-date,
+.memo-meta,
 .tab-main,
 .statusbar span {
   min-width: 0;
@@ -216,10 +216,29 @@ button {
   font-weight: 640;
 }
 
-.memo-date {
+.memo-meta {
+  display: flex;
+  gap: 7px;
+  align-items: center;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 10.5px;
   line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.memo-meta-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.memo-meta-icon {
+  display: inline-block;
+  width: 12px;
+  color: var(--muted-strong);
+  font-size: 10px;
+  text-align: left;
 }
 
 .workspace {
@@ -415,6 +434,92 @@ button {
   color: var(--danger);
 }
 
+.shortcut-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 24%);
+}
+
+.shortcut-dialog {
+  width: min(460px, calc(100vw - 44px));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 18px 50px var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.shortcut-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shortcut-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.shortcut-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.shortcut-close:hover {
+  background: var(--button-hover);
+  color: var(--text);
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px 20px;
+  padding: 14px 16px 16px;
+}
+
+.shortcut-label {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.shortcut-keys {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.shortcut-keys kbd {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--button);
+  color: var(--text);
+  text-align: center;
+  font:
+    12px / 20px "SF Mono",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--line) 70%, transparent);
+}
+
 .drop-marker {
   position: fixed;
   z-index: 11;
@@ -441,6 +546,15 @@ button {
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .memo-meta {
+    gap: 5px;
+    font-size: 9.5px;
+  }
+
+  .memo-meta-icon {
+    width: 10px;
   }
 
   .editor {

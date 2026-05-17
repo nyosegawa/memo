@@ -59,6 +59,7 @@ const state: {
     x: number;
     y: number;
   };
+  helpOpen: boolean;
 } = {
   memos: [],
   openTabs: [],
@@ -67,12 +68,8 @@ const state: {
   drafts: new Map(),
   dragging: null,
   menu: null,
+  helpOpen: false,
 };
-
-const formatDate = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 function cmd<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(name, args);
@@ -325,6 +322,7 @@ function render() {
       </section>
       ${dragGhost()}
       ${contextMenu()}
+      ${shortcutHelp()}
     </section>
   `;
   bindEvents();
@@ -335,10 +333,29 @@ function memoRow(memo: MemoSummary, index: number): string {
   return `
     <button class="memo-row${active}" data-memo-id="${memo.id}" data-index="${index}" title="${escapeAttr(memo.title)}">
       <span class="memo-title">${escapeHtml(memo.title)}</span>
-      <span class="memo-date">Created ${formatDate.format(new Date(Number(memo.createdAtMs)))}</span>
-      <span class="memo-date">Updated ${formatDate.format(new Date(Number(memo.updatedAtMs)))}</span>
+      <span class="memo-meta" aria-label="${memoMetaLabel(memo)}">${memoMeta(memo)}</span>
     </button>
   `;
+}
+
+function memoMeta(memo: MemoSummary): string {
+  return `<span class="memo-meta-item" title="Created"><span class="memo-meta-icon" aria-hidden="true">◷</span>${formatCompactDate(memo.createdAtMs)}</span><span class="memo-meta-item" title="Updated"><span class="memo-meta-icon" aria-hidden="true">↻</span>${formatCompactDate(memo.updatedAtMs)}</span>`;
+}
+
+function memoMetaLabel(memo: MemoSummary): string {
+  return escapeAttr(
+    `Created ${formatCompactDate(memo.createdAtMs)}; Updated ${formatCompactDate(memo.updatedAtMs)}`,
+  );
+}
+
+function formatCompactDate(ms: number): string {
+  const date = new Date(Number(ms));
+  const yy = String(date.getFullYear()).slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${yy}/${month}/${day} ${hour}:${minute}`;
 }
 
 function tabItem(id: string, index: number): string {
@@ -389,12 +406,10 @@ function renderMemoSummary(summary: MemoSummary) {
     row.title = summary.title;
     const title = row.querySelector<HTMLElement>(".memo-title");
     if (title) title.textContent = summary.title;
-    const dates = row.querySelectorAll<HTMLElement>(".memo-date");
-    if (dates[0]) {
-      dates[0].textContent = `Created ${formatDate.format(new Date(Number(summary.createdAtMs)))}`;
-    }
-    if (dates[1]) {
-      dates[1].textContent = `Updated ${formatDate.format(new Date(Number(summary.updatedAtMs)))}`;
+    const meta = row.querySelector<HTMLElement>(".memo-meta");
+    if (meta) {
+      meta.innerHTML = memoMeta(summary);
+      meta.setAttribute("aria-label", memoMetaLabel(summary));
     }
   }
   const tab = app.querySelector<HTMLElement>(
@@ -436,6 +451,37 @@ function contextMenu(): string {
   `;
 }
 
+function shortcutHelp(): string {
+  if (!state.helpOpen) return "";
+  return `
+    <div class="shortcut-overlay" data-action="close-help" role="presentation">
+      <section class="shortcut-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title">
+        <header class="shortcut-header">
+          <h2 id="shortcut-title">Keyboard shortcuts</h2>
+          <button class="shortcut-close" data-action="close-help" aria-label="Close">×</button>
+        </header>
+        <div class="shortcut-grid">
+          ${shortcutRow("New memo", ["⌘", "N"])}
+          ${shortcutRow("Close tab", ["⌘", "W"])}
+          ${shortcutRow("Next tab", ["⌃", "Tab"])}
+          ${shortcutRow("Previous tab", ["⌃", "⇧", "Tab"])}
+          ${shortcutRow("Jump to tab", ["⌘", "1…9"])}
+          ${shortcutRow("Delete active memo", ["⌘", "⌫"])}
+          ${shortcutRow("Shortcut help", ["⌘", "/"])}
+          ${shortcutRow("Dismiss", ["Esc"])}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function shortcutRow(label: string, keys: string[]): string {
+  return `
+    <div class="shortcut-label">${label}</div>
+    <div class="shortcut-keys">${keys.map((key) => `<kbd>${key}</kbd>`).join("")}</div>
+  `;
+}
+
 function bindEvents() {
   app.querySelectorAll<HTMLElement>("[data-action='new']").forEach((button) => {
     button.addEventListener("click", () => void createMemo());
@@ -443,6 +489,20 @@ function bindEvents() {
   app
     .querySelector<HTMLElement>("[data-action='theme']")
     ?.addEventListener("click", () => void toggleTheme());
+  app
+    .querySelectorAll<HTMLElement>("[data-action='close-help']")
+    .forEach((el) => {
+      el.addEventListener("click", (event) => {
+        if (
+          event.target !== event.currentTarget &&
+          !(event.target as HTMLElement).matches(".shortcut-close")
+        ) {
+          return;
+        }
+        state.helpOpen = false;
+        render();
+      });
+    });
   app.querySelectorAll<HTMLElement>("[data-memo-id]").forEach((row) => {
     row.addEventListener("click", (event) => {
       if (consumeSuppressedClick(row, event)) return;
@@ -651,29 +711,57 @@ function consumeSuppressedClick(el: HTMLElement, event: Event): boolean {
   return true;
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  return el.matches("input, textarea, select");
+}
+
 window.addEventListener("keydown", (event) => {
+  const commonMod = event.metaKey || event.ctrlKey;
+  if (commonMod && (event.key === "/" || event.key === "?")) {
+    event.preventDefault();
+    state.helpOpen = true;
+    render();
+    return;
+  }
+
   if (event.key === "Escape" && state.menu) {
     state.menu = null;
     render();
     return;
   }
-  const mod = event.metaKey || event.ctrlKey;
+  if (event.key === "Escape" && state.helpOpen) {
+    state.helpOpen = false;
+    render();
+    return;
+  }
+
   if (event.key === "Tab" && event.ctrlKey) {
     event.preventDefault();
     rotateTab(event.shiftKey ? -1 : 1);
     return;
   }
-  if (!mod) return;
-  if (event.key === "n") {
+
+  if (isTypingTarget(event.target)) return;
+
+  if (
+    event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    event.key.toLowerCase() === "n"
+  ) {
     event.preventDefault();
     void createMemo();
-  } else if (event.key === "w" && state.activeId) {
+  } else if (commonMod && event.key.toLowerCase() === "w" && state.activeId) {
     event.preventDefault();
     void closeTab(state.activeId);
-  } else if (event.key === "Backspace") {
+  } else if (commonMod && event.key === "Backspace") {
     event.preventDefault();
     void deleteActiveMemo();
-  } else if (/^[1-9]$/.test(event.key)) {
+  } else if (commonMod && /^[1-9]$/.test(event.key)) {
     event.preventDefault();
     activateTabIndex(Number(event.key) - 1);
   }

@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Memo",
+        "title": "",
         "width": 1120,
         "height": 720,
         "minWidth": 760,
