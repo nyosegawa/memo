@@ -54,6 +54,11 @@ const state: {
     x: number;
     y: number;
   };
+  menu: null | {
+    id: string;
+    x: number;
+    y: number;
+  };
 } = {
   memos: [],
   openTabs: [],
@@ -61,6 +66,7 @@ const state: {
   theme: "system",
   drafts: new Map(),
   dragging: null,
+  menu: null,
 };
 
 const formatDate = new Intl.DateTimeFormat(undefined, {
@@ -213,8 +219,8 @@ async function closeTab(id: string) {
   }
 }
 
-async function deleteActiveMemo() {
-  const memo = activeMemo();
+async function deleteMemo(id: string) {
+  const memo = state.memos.find((item) => item.id === id);
   if (!memo) return;
   if (!window.confirm(`Delete "${memo.title}"?`)) return;
   const snapshot = await cmd<AppSnapshot>("delete_memo", { id: memo.id });
@@ -225,6 +231,11 @@ async function deleteActiveMemo() {
     await ensureDraft(state.activeId);
     render();
   }
+}
+
+async function deleteActiveMemo() {
+  const memo = activeMemo();
+  if (memo) await deleteMemo(memo.id);
 }
 
 async function persistTabs() {
@@ -287,7 +298,6 @@ function render() {
           <strong>Memo</strong>
           <div class="toolbar">
             ${themeButton()}
-            <button class="icon-button" data-action="delete" title="Delete active memo" aria-label="Delete active memo">⌫</button>
             <button class="icon-button" data-action="new" title="New memo" aria-label="New memo">＋</button>
           </div>
         </div>
@@ -314,6 +324,7 @@ function render() {
         </div>
       </section>
       ${dragGhost()}
+      ${contextMenu()}
     </section>
   `;
   bindEvents();
@@ -416,13 +427,19 @@ function dragGhost(): string {
   return `<div class="drag-ghost" style="transform: translate(${drag.x + 8}px, ${drag.y + 8}px)">${escapeHtml(drag.label)}</div>`;
 }
 
+function contextMenu(): string {
+  if (!state.menu) return "";
+  return `
+    <div class="context-menu" style="left: ${state.menu.x}px; top: ${state.menu.y}px">
+      <button class="context-item danger" data-menu-delete="${state.menu.id}">Delete</button>
+    </div>
+  `;
+}
+
 function bindEvents() {
   app.querySelectorAll<HTMLElement>("[data-action='new']").forEach((button) => {
     button.addEventListener("click", () => void createMemo());
   });
-  app
-    .querySelector<HTMLElement>("[data-action='delete']")
-    ?.addEventListener("click", () => void deleteActiveMemo());
   app
     .querySelector<HTMLElement>("[data-action='theme']")
     ?.addEventListener("click", () => void toggleTheme());
@@ -435,6 +452,14 @@ function bindEvents() {
     row.addEventListener("pointerdown", (event) =>
       beginDrag(event, "memo", row),
     );
+    row.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      const id = row.dataset.memoId;
+      if (!id) return;
+      state.menu = clampMenu(event.clientX, event.clientY);
+      state.menu.id = id;
+      render();
+    });
   });
   app.querySelectorAll<HTMLElement>("[data-tab-activate]").forEach((tab) => {
     tab.addEventListener("click", (event) => {
@@ -464,6 +489,18 @@ function bindEvents() {
     draft.content = editor.value;
     scheduleSave(state.activeId);
     renderSaveState();
+  });
+  app.querySelectorAll<HTMLElement>("[data-menu-delete]").forEach((item) => {
+    const runDelete = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = item.dataset.menuDelete;
+      state.menu = null;
+      render();
+      if (id) void deleteMemo(id);
+    };
+    item.addEventListener("pointerdown", runDelete);
+    item.addEventListener("click", runDelete);
   });
 }
 
@@ -595,6 +632,17 @@ function markSuppressClick(el: HTMLElement) {
   }, 0);
 }
 
+function clampMenu(x: number, y: number): { id: string; x: number; y: number } {
+  const width = 132;
+  const height = 40;
+  const margin = 8;
+  return {
+    id: "",
+    x: Math.min(Math.max(margin, x), window.innerWidth - width - margin),
+    y: Math.min(Math.max(margin, y), window.innerHeight - height - margin),
+  };
+}
+
 function consumeSuppressedClick(el: HTMLElement, event: Event): boolean {
   if (el.dataset.suppressClick !== "true") return false;
   event.preventDefault();
@@ -604,6 +652,11 @@ function consumeSuppressedClick(el: HTMLElement, event: Event): boolean {
 }
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.menu) {
+    state.menu = null;
+    render();
+    return;
+  }
   const mod = event.metaKey || event.ctrlKey;
   if (event.key === "Tab" && event.ctrlKey) {
     event.preventDefault();
@@ -624,6 +677,13 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     activateTabIndex(Number(event.key) - 1);
   }
+});
+
+window.addEventListener("pointerdown", (event) => {
+  if (!state.menu) return;
+  if ((event.target as HTMLElement).closest(".context-menu")) return;
+  state.menu = null;
+  render();
 });
 
 window.addEventListener("beforeunload", () => {
