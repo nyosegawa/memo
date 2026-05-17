@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build macOS universal
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Validate
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run test:run
+          cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Memo ${{ github.ref_name }}"
+          releaseBody: |
+            macOS app and DMG built from tag `${{ github.ref_name }}`.
+
+            Unsigned build: macOS may show an unidentified developer warning.
+          releaseDraft: true
+          prerelease: false
+          args: --target universal-apple-darwin
