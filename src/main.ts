@@ -219,10 +219,10 @@ async function closeTab(id: string) {
   }
 }
 
-async function deleteMemo(id: string) {
+async function deleteMemo(id: string, options: { confirm: boolean }) {
   const memo = state.memos.find((item) => item.id === id);
   if (!memo) return;
-  if (!window.confirm(`Delete "${memo.title}"?`)) return;
+  if (options.confirm && !window.confirm(`Delete "${memo.title}"?`)) return;
   const snapshot = await cmd<AppSnapshot>("delete_memo", { id: memo.id });
   state.drafts.delete(memo.id);
   applySnapshot(snapshot);
@@ -235,7 +235,7 @@ async function deleteMemo(id: string) {
 
 async function deleteActiveMemo() {
   const memo = activeMemo();
-  if (memo) await deleteMemo(memo.id);
+  if (memo) await deleteMemo(memo.id, { confirm: true });
 }
 
 async function persistTabs() {
@@ -497,7 +497,7 @@ function bindEvents() {
       const id = item.dataset.menuDelete;
       state.menu = null;
       render();
-      if (id) void deleteMemo(id);
+      if (id) void deleteMemo(id, { confirm: false });
     };
     item.addEventListener("pointerdown", runDelete);
     item.addEventListener("click", runDelete);
