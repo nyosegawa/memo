@@ -1,4 +1,3 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import * as api from "./app/api";
 import { moveItem } from "./app/model";
 import {
@@ -146,7 +145,7 @@ async function closeTab(id: string) {
 
 async function closeCurrentWindow() {
   await flushSaves();
-  await getCurrentWindow().close();
+  await api.hideMainWindow();
 }
 
 async function deleteMemo(id: string, options: { confirm: boolean }) {

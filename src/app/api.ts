@@ -42,3 +42,7 @@ export function persistOpenTabs(
 export function persistTheme(theme: Theme): Promise<void> {
   return cmd<void>("set_theme", { theme });
 }
+
+export function hideMainWindow(): Promise<void> {
+  return cmd<void>("hide_main_window");
+}

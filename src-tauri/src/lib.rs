@@ -27,6 +27,7 @@ pub fn run() {
             commands::reorder_memos,
             commands::persist_tabs,
             commands::set_theme,
+            commands::hide_main_window,
         ])
         .on_window_event(window::handle_window_event)
         .build(tauri::generate_context!())

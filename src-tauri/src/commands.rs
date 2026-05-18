@@ -1,6 +1,7 @@
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 use crate::store::{AppSnapshot, MemoDocument, MemoStore, MemoSummary, Theme};
+use crate::window;
 
 #[tauri::command]
 pub(crate) fn list_memos(store: State<'_, MemoStore>) -> Result<AppSnapshot, String> {
@@ -51,4 +52,12 @@ pub(crate) fn persist_tabs(
 #[tauri::command]
 pub(crate) fn set_theme(theme: Theme, store: State<'_, MemoStore>) -> Result<(), String> {
     store.set_theme(theme)
+}
+
+#[tauri::command]
+pub(crate) fn hide_main_window(app: AppHandle) -> Result<(), String> {
+    let Some(main_window) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    window::hide_window(&main_window)
 }
