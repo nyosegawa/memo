@@ -1,35 +1,36 @@
-use tauri::{Manager, PhysicalPosition, PhysicalSize, WebviewWindow, Window, WindowEvent};
+use tauri::{WebviewWindow, Window, WindowEvent};
 
-use crate::store::MemoStore;
-
-pub(crate) fn restore_window_state(window: &WebviewWindow, store: &MemoStore) {
-    let Some(window_state) = store.window_state() else {
-        return;
-    };
-    let _ = window.set_size(PhysicalSize::new(window_state.width, window_state.height));
-    let _ = window.set_position(PhysicalPosition::new(window_state.x, window_state.y));
+pub(crate) fn enable_platform_frame_autosave(window: &WebviewWindow) {
+    enable_macos_frame_autosave(window);
 }
 
-pub(crate) fn flush_cached_window_state(store: &MemoStore) -> Result<(), String> {
-    store.flush_window_state()
+#[cfg(not(target_os = "macos"))]
+fn enable_macos_frame_autosave(_window: &WebviewWindow) {}
+
+#[cfg(target_os = "macos")]
+#[allow(unsafe_code)]
+fn enable_macos_frame_autosave(window: &WebviewWindow) {
+    use objc2_app_kit::{NSWindow, NSWindowFrameAutosaveName};
+    use objc2_foundation::NSString;
+
+    let Ok(ns_window) = window.ns_window() else {
+        return;
+    };
+    let autosave_name = NSString::from_str("memo-main-window-frame");
+
+    // Tauri's generic size APIs report unstable bounds with overlay titlebars on macOS.
+    // Native NSWindow frame autosave preserves the exact user-facing frame instead.
+    unsafe {
+        let ns_window = &*ns_window.cast::<NSWindow>();
+        let autosave_name: &NSWindowFrameAutosaveName = &autosave_name;
+        let _ = ns_window.setFrameUsingName(autosave_name);
+        let _ = ns_window.setFrameAutosaveName(autosave_name);
+    }
 }
 
 pub(crate) fn handle_window_event(window: &Window, event: &WindowEvent) {
-    let Some(store) = window.try_state::<MemoStore>() else {
-        return;
-    };
-    match event {
-        WindowEvent::Moved(position) => {
-            let _ = store.cache_window_position(position.x, position.y);
-        }
-        WindowEvent::Resized(size) => {
-            let _ = store.cache_window_size(size.width, size.height);
-        }
-        WindowEvent::CloseRequested { api, .. } => {
-            let _ = store.flush_window_state();
-            api.prevent_close();
-            let _ = window.hide();
-        }
-        _ => {}
+    if let WindowEvent::CloseRequested { api, .. } = event {
+        api.prevent_close();
+        let _ = window.hide();
     }
 }

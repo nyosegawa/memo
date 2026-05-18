@@ -360,8 +360,6 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (isTypingTarget(event.target)) return;
-
   if (
     event.metaKey &&
     !event.ctrlKey &&
@@ -371,6 +369,7 @@ window.addEventListener("keydown", (event) => {
   ) {
     event.preventDefault();
     void createMemo();
+    return;
   } else if (commonMod && event.key.toLowerCase() === "w") {
     event.preventDefault();
     if (state.activeId) {
@@ -378,7 +377,12 @@ window.addEventListener("keydown", (event) => {
     } else {
       void closeCurrentWindow();
     }
-  } else if (commonMod && event.key === "Backspace") {
+    return;
+  }
+
+  if (isTypingTarget(event.target)) return;
+
+  if (commonMod && event.key === "Backspace") {
     event.preventDefault();
     void deleteActiveMemo();
   } else if (commonMod && /^[1-9]$/.test(event.key)) {

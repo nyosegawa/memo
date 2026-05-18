@@ -12,7 +12,6 @@ use std::{
 const STATE_FILE: &str = "state.json";
 const MEMOS_DIR: &str = "memos";
 const UNTITLED: &str = "Untitled memo";
-
 #[derive(Debug)]
 pub(crate) struct MemoStore {
     root: PathBuf,
@@ -27,8 +26,6 @@ struct PersistedState {
     open_tabs: Vec<String>,
     active_id: Option<String>,
     theme: Theme,
-    #[serde(default)]
-    window_state: Option<WindowState>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -47,15 +44,6 @@ pub(crate) enum Theme {
     System,
     Light,
     Dark,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct WindowState {
-    pub(crate) x: i32,
-    pub(crate) y: i32,
-    pub(crate) width: u32,
-    pub(crate) height: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -211,36 +199,6 @@ impl MemoStore {
         self.persist(&state)
     }
 
-    pub(crate) fn window_state(&self) -> Option<WindowState> {
-        let Ok(state) = self.inner.lock() else {
-            return None;
-        };
-        state.window_state
-    }
-
-    pub(crate) fn cache_window_position(&self, x: i32, y: i32) -> Result<(), String> {
-        let mut state = self.inner.lock().map_err(|err| err.to_string())?;
-        if let Some(window_state) = state.window_state.as_mut() {
-            window_state.x = x;
-            window_state.y = y;
-        }
-        Ok(())
-    }
-
-    pub(crate) fn cache_window_size(&self, width: u32, height: u32) -> Result<(), String> {
-        let mut state = self.inner.lock().map_err(|err| err.to_string())?;
-        if let Some(window_state) = state.window_state.as_mut() {
-            window_state.width = width;
-            window_state.height = height;
-        }
-        Ok(())
-    }
-
-    pub(crate) fn flush_window_state(&self) -> Result<(), String> {
-        let state = self.inner.lock().map_err(|err| err.to_string())?;
-        self.persist(&state)
-    }
-
     fn snapshot_locked(&self, state: &PersistedState) -> Result<AppSnapshot, String> {
         let memos = state
             .memos
@@ -387,7 +345,6 @@ mod tests {
             open_tabs: vec!["missing".to_string(), "memo-1".to_string()],
             active_id: Some("missing".to_string()),
             theme: Theme::Dark,
-            window_state: None,
         };
         store.persist(&persisted).expect("persist");
         let reloaded = read_state(dir.path()).expect("read state");
@@ -423,6 +380,5 @@ mod tests {
 
         assert_eq!(state.memos.len(), 1);
         assert_eq!(state.open_tabs, ["memo-1"]);
-        assert!(state.window_state.is_none());
     }
 }

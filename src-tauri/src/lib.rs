@@ -14,9 +14,7 @@ pub fn run() {
             app.manage(MemoStore::new(data_dir)?);
             if let Some(main_window) = app.get_webview_window("main") {
                 main_window.set_title("")?;
-                if let Some(store) = app.try_state::<MemoStore>() {
-                    window::restore_window_state(&main_window, &store);
-                }
+                window::enable_platform_frame_autosave(&main_window);
             }
             Ok(())
         })
@@ -34,11 +32,6 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| match event {
-            tauri::RunEvent::ExitRequested { .. } => {
-                if let Some(store) = app.try_state::<MemoStore>() {
-                    let _ = window::flush_cached_window_state(&store);
-                }
-            }
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen {
                 has_visible_windows: false,
