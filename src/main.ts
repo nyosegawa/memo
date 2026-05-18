@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { moveItem, normalizeOpenTabs, resolveActiveId } from "./model";
 import "./styles.css";
 
@@ -214,6 +215,11 @@ async function closeTab(id: string) {
     await ensureDraft(state.activeId);
     render();
   }
+}
+
+async function closeCurrentWindow() {
+  await flushSaves();
+  await getCurrentWindow().close();
 }
 
 async function deleteMemo(id: string, options: { confirm: boolean }) {
@@ -755,9 +761,13 @@ window.addEventListener("keydown", (event) => {
   ) {
     event.preventDefault();
     void createMemo();
-  } else if (commonMod && event.key.toLowerCase() === "w" && state.activeId) {
+  } else if (commonMod && event.key.toLowerCase() === "w") {
     event.preventDefault();
-    void closeTab(state.activeId);
+    if (state.activeId) {
+      void closeTab(state.activeId);
+    } else {
+      void closeCurrentWindow();
+    }
   } else if (commonMod && event.key === "Backspace") {
     event.preventDefault();
     void deleteActiveMemo();

@@ -8,7 +8,7 @@ use std::{
     },
     time::{SystemTime, UNIX_EPOCH},
 };
-use tauri::{Manager, State};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, State, WebviewWindow, Window, WindowEvent};
 
 const STATE_FILE: &str = "state.json";
 const MEMOS_DIR: &str = "memos";
@@ -28,6 +28,8 @@ struct PersistedState {
     open_tabs: Vec<String>,
     active_id: Option<String>,
     theme: Theme,
+    #[serde(default)]
+    window_state: Option<WindowState>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -46,6 +48,15 @@ enum Theme {
     System,
     Light,
     Dark,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WindowState {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -274,6 +285,57 @@ fn set_theme(theme: Theme, store: State<'_, MemoStore>) -> Result<(), String> {
     store.persist(&state)
 }
 
+fn restore_window_state(window: &WebviewWindow, store: &MemoStore) {
+    let Ok(state) = store.inner.lock() else {
+        return;
+    };
+    let Some(window_state) = state.window_state else {
+        return;
+    };
+    drop(state);
+
+    let _ = window.set_size(PhysicalSize::new(window_state.width, window_state.height));
+    let _ = window.set_position(PhysicalPosition::new(window_state.x, window_state.y));
+}
+
+fn persist_window_state(store: &MemoStore, window_state: WindowState) -> Result<(), String> {
+    let mut state = store.inner.lock().map_err(|err| err.to_string())?;
+    state.window_state = Some(window_state);
+    store.persist(&state)
+}
+
+fn save_window_state(window: &Window, store: &MemoStore) -> Result<(), String> {
+    if window.is_fullscreen().map_err(to_message)? || window.is_minimized().map_err(to_message)? {
+        return Ok(());
+    }
+
+    let position = window.outer_position().map_err(to_message)?;
+    let size = window.outer_size().map_err(to_message)?;
+    persist_window_state(store, window_state_from_parts(position, size))
+}
+
+fn save_webview_window_state(window: &WebviewWindow, store: &MemoStore) -> Result<(), String> {
+    if window.is_fullscreen().map_err(to_message)? || window.is_minimized().map_err(to_message)? {
+        return Ok(());
+    }
+
+    let position = window.outer_position().map_err(to_message)?;
+    let size = window.outer_size().map_err(to_message)?;
+    persist_window_state(store, window_state_from_parts(position, size))
+}
+
+fn window_state_from_parts(
+    position: PhysicalPosition<i32>,
+    size: PhysicalSize<u32>,
+) -> WindowState {
+    WindowState {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    }
+}
+
 fn read_state(root: &Path) -> io::Result<PersistedState> {
     let path = root.join(STATE_FILE);
     if !path.exists() {
@@ -325,6 +387,9 @@ pub fn run() {
             app.manage(MemoStore::new(data_dir)?);
             if let Some(window) = app.get_webview_window("main") {
                 window.set_title("")?;
+                if let Some(store) = app.try_state::<MemoStore>() {
+                    restore_window_state(&window, &store);
+                }
             }
             Ok(())
         })
@@ -338,8 +403,45 @@ pub fn run() {
             persist_tabs,
             set_theme,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .on_window_event(|window, event| {
+            let Some(store) = window.try_state::<MemoStore>() else {
+                return;
+            };
+            match event {
+                WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
+                    let _ = save_window_state(window, &store);
+                }
+                WindowEvent::CloseRequested { api, .. } => {
+                    let _ = save_window_state(window, &store);
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+                _ => {}
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { .. } => {
+                if let Some(window) = app.get_webview_window("main")
+                    && let Some(store) = app.try_state::<MemoStore>()
+                {
+                    let _ = save_webview_window_state(&window, &store);
+                }
+            }
+            #[cfg(target_os = "macos")]
+            tauri::RunEvent::Reopen {
+                has_visible_windows: false,
+                ..
+            } => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+            _ => {}
+        });
 }
 
 #[cfg(test)]
@@ -387,6 +489,7 @@ mod tests {
             open_tabs: vec!["missing".to_string(), "memo-1".to_string()],
             active_id: Some("missing".to_string()),
             theme: Theme::Dark,
+            window_state: None,
         };
         store.persist(&persisted).expect("persist");
         let reloaded = read_state(dir.path()).expect("read state");
@@ -395,5 +498,33 @@ mod tests {
         assert_eq!(snapshot.memos[0].title, "Alpha");
         assert_eq!(snapshot.open_tabs, ["memo-1"]);
         assert_eq!(snapshot.active_id.as_deref(), Some("memo-1"));
+    }
+
+    #[test]
+    fn read_state_accepts_files_without_window_state() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        fs::write(
+            dir.path().join("state.json"),
+            r##"{
+  "memos": [
+    {
+      "id": "memo-1",
+      "fileName": "memo-1.md",
+      "createdAtMs": 10,
+      "updatedAtMs": 20
+    }
+  ],
+  "openTabs": ["memo-1"],
+  "activeId": "memo-1",
+  "theme": "dark"
+}"##,
+        )
+        .expect("write state");
+
+        let state = read_state(dir.path()).expect("read state");
+
+        assert_eq!(state.memos.len(), 1);
+        assert_eq!(state.open_tabs, ["memo-1"]);
+        assert!(state.window_state.is_none());
     }
 }
