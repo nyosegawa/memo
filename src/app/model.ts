@@ -83,3 +83,74 @@ export function indentWithSpaces(
     selectionEnd: selectionEnd + insertPositions.length * INDENT.length,
   };
 }
+
+export function outdentWithSpaces(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): TextEdit {
+  const lineStarts = selectedLineStarts(value, selectionStart, selectionEnd);
+  const removals = lineStarts
+    .map((position) => ({
+      position,
+      length: removableIndentLength(value, position),
+    }))
+    .filter((removal) => removal.length > 0);
+
+  if (removals.length === 0) {
+    return { value, selectionStart, selectionEnd };
+  }
+
+  let nextValue = value;
+  for (let index = removals.length - 1; index >= 0; index -= 1) {
+    const { position, length } = removals[index];
+    nextValue = `${nextValue.slice(0, position)}${nextValue.slice(position + length)}`;
+  }
+
+  return {
+    value: nextValue,
+    selectionStart: shiftSelection(selectionStart, removals),
+    selectionEnd: shiftSelection(selectionEnd, removals),
+  };
+}
+
+function selectedLineStarts(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): number[] {
+  const firstLineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+  const effectiveEnd =
+    selectionEnd > selectionStart && value[selectionEnd - 1] === "\n"
+      ? selectionEnd - 1
+      : selectionEnd;
+  const starts = [firstLineStart];
+  let nextLineStart = value.indexOf("\n", firstLineStart);
+  while (nextLineStart !== -1 && nextLineStart + 1 <= effectiveEnd) {
+    starts.push(nextLineStart + 1);
+    nextLineStart = value.indexOf("\n", nextLineStart + 1);
+  }
+  return starts;
+}
+
+function removableIndentLength(value: string, position: number): number {
+  if (value[position] === "\t") return 1;
+  let count = 0;
+  while (count < INDENT.length && value[position + count] === " ") {
+    count += 1;
+  }
+  return count;
+}
+
+function shiftSelection(
+  selection: number,
+  removals: readonly { position: number; length: number }[],
+): number {
+  let next = selection;
+  for (const { position, length } of removals) {
+    if (position < selection) {
+      next -= Math.min(length, selection - position);
+    }
+  }
+  return next;
+}

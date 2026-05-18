@@ -3,6 +3,7 @@ import {
   indentWithSpaces,
   moveItem,
   normalizeOpenTabs,
+  outdentWithSpaces,
   resolveActiveId,
 } from "./model";
 
@@ -58,6 +59,32 @@ describe("indentWithSpaces", () => {
       value: "    one\ntwo\n",
       selectionStart: 4,
       selectionEnd: 8,
+    });
+  });
+});
+
+describe("outdentWithSpaces", () => {
+  it("removes up to four spaces from the current line", () => {
+    expect(outdentWithSpaces("    ab", 6, 6)).toEqual({
+      value: "ab",
+      selectionStart: 2,
+      selectionEnd: 2,
+    });
+  });
+
+  it("outdents every selected line", () => {
+    expect(outdentWithSpaces("    one\n    two\nthree", 5, 17)).toEqual({
+      value: "one\ntwo\nthree",
+      selectionStart: 1,
+      selectionEnd: 9,
+    });
+  });
+
+  it("does not outdent unindented lines", () => {
+    expect(outdentWithSpaces("one\n  two", 0, 8)).toEqual({
+      value: "one\ntwo",
+      selectionStart: 0,
+      selectionEnd: 6,
     });
   });
 });

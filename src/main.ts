@@ -1,5 +1,5 @@
 import * as api from "./app/api";
-import { indentWithSpaces, moveItem } from "./app/model";
+import { indentWithSpaces, moveItem, outdentWithSpaces } from "./app/model";
 import {
   activeMemo,
   applySnapshot,
@@ -70,6 +70,8 @@ async function createMemo() {
     saveTimer: null,
     saving: false,
     loaded: true,
+    undoStack: [],
+    redoStack: [],
   });
   await persistTabs();
   render({ focusEditor: true });
@@ -97,6 +99,8 @@ async function ensureDraft(id: string) {
     saveTimer: null,
     saving: false,
     loaded: true,
+    undoStack: [],
+    redoStack: [],
   });
   replaceSummary(state, doc.summary);
 }
@@ -286,23 +290,19 @@ function bindEvents() {
   });
   const editor = app.querySelector<HTMLTextAreaElement>(".editor");
   editor?.addEventListener("keydown", (event) => {
-    if (
-      event.key !== "Tab" ||
-      event.shiftKey ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.altKey
-    ) {
+    if (handleEditorUndoRedo(editor, event)) return;
+    if (event.key !== "Tab" || event.metaKey || event.ctrlKey || event.altKey) {
       return;
     }
     event.preventDefault();
-    indentEditorSelection(editor);
+    applyEditorTransform(editor, event.shiftKey ? "outdent" : "indent");
   });
   editor?.addEventListener("input", () => {
     if (!state.activeId) return;
     const draft = state.drafts.get(state.activeId);
     if (!draft) return;
     draft.content = editor.value;
+    draft.redoStack = [];
     scheduleSave(state.activeId);
     renderSaveState(state);
   });
@@ -340,21 +340,86 @@ function restoreActiveScrollTop() {
   editor.scrollTop = state.scrollTops.get(state.activeId) ?? 0;
 }
 
-function indentEditorSelection(editor: HTMLTextAreaElement) {
+function applyEditorTransform(
+  editor: HTMLTextAreaElement,
+  transform: "indent" | "outdent",
+) {
   if (!state.activeId) return;
   const draft = state.drafts.get(state.activeId);
   if (!draft) return;
-  const edit = indentWithSpaces(
-    editor.value,
-    editor.selectionStart,
-    editor.selectionEnd,
-  );
+  const before = editorSnapshot(editor);
+  const edit =
+    transform === "indent"
+      ? indentWithSpaces(
+          editor.value,
+          editor.selectionStart,
+          editor.selectionEnd,
+        )
+      : outdentWithSpaces(
+          editor.value,
+          editor.selectionStart,
+          editor.selectionEnd,
+        );
+  if (
+    edit.value === before.value &&
+    edit.selectionStart === before.selectionStart &&
+    edit.selectionEnd === before.selectionEnd
+  ) {
+    return;
+  }
+  draft.undoStack.push(before);
+  draft.redoStack = [];
   editor.value = edit.value;
   editor.selectionStart = edit.selectionStart;
   editor.selectionEnd = edit.selectionEnd;
   draft.content = edit.value;
   scheduleSave(state.activeId);
   renderSaveState(state);
+}
+
+function handleEditorUndoRedo(
+  editor: HTMLTextAreaElement,
+  event: KeyboardEvent,
+): boolean {
+  if (!state.activeId || !event.metaKey || event.ctrlKey || event.altKey) {
+    return false;
+  }
+  const key = event.key.toLowerCase();
+  const wantsUndo = key === "z" && !event.shiftKey;
+  const wantsRedo = (key === "z" && event.shiftKey) || key === "y";
+  if (!wantsUndo && !wantsRedo) return false;
+
+  const draft = state.drafts.get(state.activeId);
+  if (!draft) return false;
+  const fromStack = wantsUndo ? draft.undoStack : draft.redoStack;
+  const toStack = wantsUndo ? draft.redoStack : draft.undoStack;
+  const snapshot = fromStack.pop();
+  if (!snapshot) return false;
+
+  event.preventDefault();
+  toStack.push(editorSnapshot(editor));
+  restoreEditorSnapshot(editor, snapshot);
+  draft.content = snapshot.value;
+  scheduleSave(state.activeId);
+  renderSaveState(state);
+  return true;
+}
+
+function editorSnapshot(editor: HTMLTextAreaElement) {
+  return {
+    value: editor.value,
+    selectionStart: editor.selectionStart,
+    selectionEnd: editor.selectionEnd,
+  };
+}
+
+function restoreEditorSnapshot(
+  editor: HTMLTextAreaElement,
+  snapshot: ReturnType<typeof editorSnapshot>,
+) {
+  editor.value = snapshot.value;
+  editor.selectionStart = snapshot.selectionStart;
+  editor.selectionEnd = snapshot.selectionEnd;
 }
 
 function dragContext() {

@@ -25,6 +25,14 @@ export interface Draft {
   saveTimer: number | null;
   saving: boolean;
   loaded: boolean;
+  undoStack: EditorSnapshot[];
+  redoStack: EditorSnapshot[];
+}
+
+export interface EditorSnapshot {
+  value: string;
+  selectionStart: number;
+  selectionEnd: number;
 }
 
 export interface DragState {
