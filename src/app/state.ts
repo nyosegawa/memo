@@ -8,6 +8,7 @@ export function createInitialState(): AppState {
     activeId: null,
     theme: "system",
     drafts: new Map(),
+    scrollTops: new Map(),
     dragging: null,
     menu: null,
     helpOpen: false,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { moveItem, normalizeOpenTabs, resolveActiveId } from "./model";
+import {
+  indentWithSpaces,
+  moveItem,
+  normalizeOpenTabs,
+  resolveActiveId,
+} from "./model";
 
 describe("moveItem", () => {
   it("moves an item before a later insertion point", () => {
@@ -28,5 +33,31 @@ describe("tab persistence model", () => {
 
   it("uses null when there are no open tabs", () => {
     expect(resolveActiveId("x", [])).toBeNull();
+  });
+});
+
+describe("indentWithSpaces", () => {
+  it("inserts four spaces at the caret", () => {
+    expect(indentWithSpaces("ab", 1, 1)).toEqual({
+      value: "a    b",
+      selectionStart: 5,
+      selectionEnd: 5,
+    });
+  });
+
+  it("indents every selected line", () => {
+    expect(indentWithSpaces("one\ntwo\nthree", 1, 7)).toEqual({
+      value: "    one\n    two\nthree",
+      selectionStart: 5,
+      selectionEnd: 15,
+    });
+  });
+
+  it("does not indent the next line when selection ends at its start", () => {
+    expect(indentWithSpaces("one\ntwo\n", 0, 4)).toEqual({
+      value: "    one\ntwo\n",
+      selectionStart: 4,
+      selectionEnd: 8,
+    });
   });
 });

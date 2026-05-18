@@ -52,6 +52,7 @@ export interface AppState {
   activeId: string | null;
   theme: Theme;
   drafts: Map<string, Draft>;
+  scrollTops: Map<string, number>;
   dragging: DragState | null;
   menu: MenuState | null;
   helpOpen: boolean;

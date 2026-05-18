@@ -35,3 +35,51 @@ export function resolveActiveId(
   if (activeId && openTabs.includes(activeId)) return activeId;
   return openTabs[0] ?? null;
 }
+
+export interface TextEdit {
+  value: string;
+  selectionStart: number;
+  selectionEnd: number;
+}
+
+const INDENT = "    ";
+
+export function indentWithSpaces(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): TextEdit {
+  if (selectionStart === selectionEnd) {
+    return {
+      value: `${value.slice(0, selectionStart)}${INDENT}${value.slice(selectionEnd)}`,
+      selectionStart: selectionStart + INDENT.length,
+      selectionEnd: selectionStart + INDENT.length,
+    };
+  }
+
+  const firstLineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+  const effectiveEnd =
+    selectionEnd > selectionStart && value[selectionEnd - 1] === "\n"
+      ? selectionEnd - 1
+      : selectionEnd;
+  const insertPositions = [firstLineStart];
+  let nextLineStart = value.indexOf("\n", firstLineStart);
+  while (nextLineStart !== -1 && nextLineStart + 1 <= effectiveEnd) {
+    insertPositions.push(nextLineStart + 1);
+    nextLineStart = value.indexOf("\n", nextLineStart + 1);
+  }
+
+  let nextValue = value;
+  for (let index = insertPositions.length - 1; index >= 0; index -= 1) {
+    const position = insertPositions[index];
+    nextValue = `${nextValue.slice(0, position)}${INDENT}${nextValue.slice(position)}`;
+  }
+
+  const selectionShift =
+    insertPositions[0] <= selectionStart ? INDENT.length : 0;
+  return {
+    value: nextValue,
+    selectionStart: selectionStart + selectionShift,
+    selectionEnd: selectionEnd + insertPositions.length * INDENT.length,
+  };
+}

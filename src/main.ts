@@ -1,5 +1,5 @@
 import * as api from "./app/api";
-import { moveItem } from "./app/model";
+import { indentWithSpaces, moveItem } from "./app/model";
 import {
   activeMemo,
   applySnapshot,
@@ -23,6 +23,10 @@ const SAVE_DELAY_MS = 240;
 const app = mustQuery<HTMLDivElement>("#app");
 const state = createInitialState();
 
+interface RenderOptions {
+  focusEditor?: boolean;
+}
+
 function mustQuery<T extends HTMLElement>(selector: string): T {
   const el = document.querySelector<T>(selector);
   if (!el) throw new Error(`${selector} is missing`);
@@ -36,16 +40,20 @@ async function load() {
     await openMemo(state.memos[0].id);
   } else if (state.activeId) {
     await ensureDraft(state.activeId);
-    render();
+    render({ focusEditor: true });
   }
 }
 
-function render() {
+function render(options: RenderOptions = {}) {
+  preserveActiveScrollTop();
   app.innerHTML = renderShell(state);
   bindEvents();
+  restoreActiveScrollTop();
+  if (options.focusEditor) focusEditor();
 }
 
 async function createMemo() {
+  preserveActiveScrollTop();
   const doc = await api.createMemoDocument();
   state.memos = [
     doc.summary,
@@ -64,10 +72,11 @@ async function createMemo() {
     loaded: true,
   });
   await persistTabs();
-  render();
+  render({ focusEditor: true });
 }
 
 async function openMemo(id: string) {
+  preserveActiveScrollTop();
   if (!state.openTabs.includes(id)) {
     state.openTabs.push(id);
   }
@@ -75,7 +84,7 @@ async function openMemo(id: string) {
   await persistTabs();
   render();
   await ensureDraft(id);
-  render();
+  render({ focusEditor: true });
 }
 
 async function ensureDraft(id: string) {
@@ -129,6 +138,7 @@ async function flushSaves() {
 }
 
 async function closeTab(id: string) {
+  preserveActiveScrollTop();
   await saveMemo(id);
   const index = state.openTabs.indexOf(id);
   state.openTabs = state.openTabs.filter((openId) => openId !== id);
@@ -139,8 +149,9 @@ async function closeTab(id: string) {
   render();
   if (state.activeId) {
     await ensureDraft(state.activeId);
-    render();
+    render({ focusEditor: true });
   }
+  state.scrollTops.delete(id);
 }
 
 async function closeCurrentWindow() {
@@ -149,6 +160,7 @@ async function closeCurrentWindow() {
 }
 
 async function deleteMemo(id: string, options: { confirm: boolean }) {
+  preserveActiveScrollTop();
   const memo = state.memos.find((item) => item.id === id);
   if (!memo) return;
   if (options.confirm && !window.confirm(`Delete "${memo.title}"?`)) return;
@@ -158,8 +170,9 @@ async function deleteMemo(id: string, options: { confirm: boolean }) {
   render();
   if (state.activeId) {
     await ensureDraft(state.activeId);
-    render();
+    render({ focusEditor: true });
   }
+  state.scrollTops.delete(id);
 }
 
 async function deleteActiveMemo() {
@@ -188,12 +201,13 @@ async function reorderMemos(fromIndex: number, insertAt: number) {
 }
 
 async function reorderTabs(fromIndex: number, insertAt: number) {
+  preserveActiveScrollTop();
   state.openTabs = moveItem(state.openTabs, fromIndex, insertAt);
   state.activeId =
     state.openTabs[Math.min(insertAt, state.openTabs.length - 1)] ??
     state.activeId;
   await persistTabs();
-  render();
+  render({ focusEditor: true });
 }
 
 function rotateTab(direction: 1 | -1) {
@@ -271,6 +285,19 @@ function bindEvents() {
     );
   });
   const editor = app.querySelector<HTMLTextAreaElement>(".editor");
+  editor?.addEventListener("keydown", (event) => {
+    if (
+      event.key !== "Tab" ||
+      event.shiftKey ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    indentEditorSelection(editor);
+  });
   editor?.addEventListener("input", () => {
     if (!state.activeId) return;
     const draft = state.drafts.get(state.activeId);
@@ -279,6 +306,7 @@ function bindEvents() {
     scheduleSave(state.activeId);
     renderSaveState(state);
   });
+  editor?.addEventListener("scroll", () => preserveActiveScrollTop());
   app.querySelectorAll<HTMLElement>("[data-menu-delete]").forEach((item) => {
     const runDelete = (event: Event) => {
       event.preventDefault();
@@ -291,6 +319,42 @@ function bindEvents() {
     item.addEventListener("pointerdown", runDelete);
     item.addEventListener("click", runDelete);
   });
+}
+
+function focusEditor() {
+  const editor = app.querySelector<HTMLTextAreaElement>(".editor");
+  if (!editor) return;
+  editor.focus({ preventScroll: true });
+}
+
+function preserveActiveScrollTop() {
+  if (!state.activeId) return;
+  const editor = app.querySelector<HTMLTextAreaElement>(".editor");
+  if (editor) state.scrollTops.set(state.activeId, editor.scrollTop);
+}
+
+function restoreActiveScrollTop() {
+  if (!state.activeId) return;
+  const editor = app.querySelector<HTMLTextAreaElement>(".editor");
+  if (!editor) return;
+  editor.scrollTop = state.scrollTops.get(state.activeId) ?? 0;
+}
+
+function indentEditorSelection(editor: HTMLTextAreaElement) {
+  if (!state.activeId) return;
+  const draft = state.drafts.get(state.activeId);
+  if (!draft) return;
+  const edit = indentWithSpaces(
+    editor.value,
+    editor.selectionStart,
+    editor.selectionEnd,
+  );
+  editor.value = edit.value;
+  editor.selectionStart = edit.selectionStart;
+  editor.selectionEnd = edit.selectionEnd;
+  draft.content = edit.value;
+  scheduleSave(state.activeId);
+  renderSaveState(state);
 }
 
 function dragContext() {
