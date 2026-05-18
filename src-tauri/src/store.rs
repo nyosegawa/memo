@@ -218,9 +218,26 @@ impl MemoStore {
         state.window_state
     }
 
-    pub(crate) fn set_window_state(&self, window_state: WindowState) -> Result<(), String> {
+    pub(crate) fn cache_window_position(&self, x: i32, y: i32) -> Result<(), String> {
         let mut state = self.inner.lock().map_err(|err| err.to_string())?;
-        state.window_state = Some(window_state);
+        if let Some(window_state) = state.window_state.as_mut() {
+            window_state.x = x;
+            window_state.y = y;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn cache_window_size(&self, width: u32, height: u32) -> Result<(), String> {
+        let mut state = self.inner.lock().map_err(|err| err.to_string())?;
+        if let Some(window_state) = state.window_state.as_mut() {
+            window_state.width = width;
+            window_state.height = height;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn flush_window_state(&self) -> Result<(), String> {
+        let state = self.inner.lock().map_err(|err| err.to_string())?;
         self.persist(&state)
     }
 

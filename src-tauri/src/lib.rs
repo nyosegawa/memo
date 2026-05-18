@@ -35,10 +35,8 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app, event| match event {
             tauri::RunEvent::ExitRequested { .. } => {
-                if let Some(window) = app.get_webview_window("main")
-                    && let Some(store) = app.try_state::<MemoStore>()
-                {
-                    let _ = window::save_webview_window_state(&window, &store);
+                if let Some(store) = app.try_state::<MemoStore>() {
+                    let _ = window::flush_cached_window_state(&store);
                 }
             }
             #[cfg(target_os = "macos")]
