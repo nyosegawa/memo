@@ -1,10 +1,12 @@
-import { activeMemo } from "../app/state";
+import { findTextMatches } from "../app/model";
+import { activeMemo, activeSearch } from "../app/state";
 import type { AppState, Draft, MemoSummary } from "../app/types";
 import { escapeAttr, escapeHtml, formatCompactDate } from "./html";
 
 export function renderShell(state: AppState): string {
   const memo = activeMemo(state);
   const draft = memo ? state.drafts.get(memo.id) : null;
+  const search = activeSearch(state);
   return `
     <section class="shell">
       <aside class="sidebar">
@@ -27,7 +29,8 @@ export function renderShell(state: AppState): string {
         <section class="editor-wrap">
           ${
             memo
-              ? `<textarea class="editor" spellcheck="true" aria-label="Memo content" placeholder="Write in markdown...">${escapeHtml(
+              ? `${search.open ? searchBar(draft?.content ?? "", search.query, search.currentIndex) : ""}
+                <textarea class="editor" spellcheck="true" aria-label="Memo content" placeholder="Write in markdown...">${escapeHtml(
                   draft?.content ?? "",
                 )}</textarea>`
               : `<div class="empty"><button class="primary" data-action="new">Create memo</button></div>`
@@ -173,6 +176,7 @@ function shortcutHelp(state: AppState): string {
         </header>
         <div class="shortcut-grid">
           ${shortcutRow("New memo", ["⌘", "N"])}
+          ${shortcutRow("Find in editor", ["⌘", "F"])}
           ${shortcutRow("Close tab", ["⌘", "W"])}
           ${shortcutRow("Next tab", ["⌃", "Tab"])}
           ${shortcutRow("Previous tab", ["⌃", "⇧", "Tab"])}
@@ -183,6 +187,35 @@ function shortcutHelp(state: AppState): string {
         </div>
       </section>
     </div>
+  `;
+}
+
+function searchBar(value: string, query: string, currentIndex: number): string {
+  const matches = findTextMatches(value, query);
+  const current =
+    matches.length > 0 ? Math.min(currentIndex, matches.length - 1) : 0;
+  const count =
+    query.length === 0
+      ? ""
+      : matches.length > 0
+        ? `${current + 1} / ${matches.length}`
+        : "0 / 0";
+  const disabled = matches.length === 0 ? " disabled" : "";
+  return `
+    <search class="search-bar" aria-label="Find in editor" data-search-bar>
+      <span class="search-bar-icon" aria-hidden="true">⌕</span>
+      <input
+        class="search-bar-input"
+        type="text"
+        placeholder="Find in editor"
+        value="${escapeAttr(query)}"
+        data-search-input
+      />
+      <span class="search-bar-count" aria-live="polite">${count}</span>
+      <button class="search-bar-btn" data-search-prev aria-label="Previous match"${disabled}>⌃</button>
+      <button class="search-bar-btn" data-search-next aria-label="Next match"${disabled}>⌄</button>
+      <button class="search-bar-btn" data-search-close aria-label="Close search">×</button>
+    </search>
   `;
 }
 

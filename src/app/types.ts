@@ -35,6 +35,13 @@ export interface EditorSnapshot {
   selectionEnd: number;
 }
 
+export interface SearchState {
+  open: boolean;
+  query: string;
+  currentIndex: number;
+  focusToken: number;
+}
+
 export interface DragState {
   kind: "memo" | "tab";
   fromIndex: number;
@@ -61,6 +68,7 @@ export interface AppState {
   theme: Theme;
   drafts: Map<string, Draft>;
   scrollTops: Map<string, number>;
+  searches: Map<string, SearchState>;
   dragging: DragState | null;
   menu: MenuState | null;
   helpOpen: boolean;

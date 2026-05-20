@@ -1,5 +1,12 @@
 import { normalizeOpenTabs, resolveActiveId } from "./model";
-import type { AppSnapshot, AppState, MemoSummary } from "./types";
+import type { AppSnapshot, AppState, MemoSummary, SearchState } from "./types";
+
+export const DEFAULT_SEARCH_STATE: SearchState = {
+  open: false,
+  query: "",
+  currentIndex: 0,
+  focusToken: 0,
+};
 
 export function createInitialState(): AppState {
   return {
@@ -9,6 +16,7 @@ export function createInitialState(): AppState {
     theme: "system",
     drafts: new Map(),
     scrollTops: new Map(),
+    searches: new Map(),
     dragging: null,
     menu: null,
     helpOpen: false,
@@ -29,6 +37,29 @@ export function applyTheme(state: AppState) {
 
 export function activeMemo(state: AppState): MemoSummary | null {
   return state.memos.find((memo) => memo.id === state.activeId) ?? null;
+}
+
+export function activeSearch(state: AppState): SearchState {
+  return activeSearchFor(state, state.activeId);
+}
+
+export function activeSearchFor(
+  state: AppState,
+  id: string | null,
+): SearchState {
+  if (!id) return DEFAULT_SEARCH_STATE;
+  return state.searches.get(id) ?? DEFAULT_SEARCH_STATE;
+}
+
+export function updateSearch(
+  state: AppState,
+  id: string,
+  update: (current: SearchState) => SearchState,
+) {
+  state.searches.set(
+    id,
+    update(state.searches.get(id) ?? DEFAULT_SEARCH_STATE),
+  );
 }
 
 export function replaceSummary(state: AppState, summary: MemoSummary) {
