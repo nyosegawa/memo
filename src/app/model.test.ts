@@ -1,11 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
+  findTextMatches,
   indentWithSpaces,
   moveItem,
   normalizeOpenTabs,
   outdentWithSpaces,
   resolveActiveId,
 } from "./model";
+
+describe("findTextMatches", () => {
+  it("finds case-insensitive non-overlapping matches", () => {
+    expect(findTextMatches("Alpha beta alpha", "ALPHA")).toEqual([
+      { start: 0, end: 5 },
+      { start: 11, end: 16 },
+    ]);
+  });
+
+  it("returns no matches for an empty query", () => {
+    expect(findTextMatches("alpha", "")).toEqual([]);
+  });
+
+  it("advances by query length for repeated text", () => {
+    expect(findTextMatches("aaaa", "aa")).toEqual([
+      { start: 0, end: 2 },
+      { start: 2, end: 4 },
+    ]);
+  });
+});
 
 describe("moveItem", () => {
   it("moves an item before a later insertion point", () => {

@@ -1,11 +1,18 @@
 import * as api from "./app/api";
-import { indentWithSpaces, moveItem, outdentWithSpaces } from "./app/model";
+import {
+  findTextMatches,
+  indentWithSpaces,
+  moveItem,
+  outdentWithSpaces,
+} from "./app/model";
 import {
   activeMemo,
+  activeSearchFor,
   applySnapshot,
   applyTheme,
   createInitialState,
   replaceSummary,
+  updateSearch,
 } from "./app/state";
 import { beginDrag } from "./interaction/drag";
 import {
@@ -25,6 +32,8 @@ const state = createInitialState();
 
 interface RenderOptions {
   focusEditor?: boolean;
+  focusSearch?: boolean;
+  selectSearchText?: boolean;
 }
 
 function mustQuery<T extends HTMLElement>(selector: string): T {
@@ -49,7 +58,12 @@ function render(options: RenderOptions = {}) {
   app.innerHTML = renderShell(state);
   bindEvents();
   restoreActiveScrollTop();
-  if (options.focusEditor) focusEditor();
+  if (options.focusSearch) {
+    selectActiveSearchMatch();
+    focusSearchInput(options.selectSearchText ?? false);
+  } else if (options.focusEditor) {
+    focusEditor();
+  }
 }
 
 async function createMemo() {
@@ -170,6 +184,7 @@ async function deleteMemo(id: string, options: { confirm: boolean }) {
   if (options.confirm && !window.confirm(`Delete "${memo.title}"?`)) return;
   const snapshot = await api.deleteMemoDocument(memo.id);
   state.drafts.delete(memo.id);
+  state.searches.delete(memo.id);
   applySnapshot(state, snapshot);
   render();
   if (state.activeId) {
@@ -307,6 +322,32 @@ function bindEvents() {
     renderSaveState(state);
   });
   editor?.addEventListener("scroll", () => preserveActiveScrollTop());
+  const searchInput = app.querySelector<HTMLInputElement>(
+    "[data-search-input]",
+  );
+  searchInput?.addEventListener("input", () => {
+    setSearchQuery(searchInput.value);
+  });
+  searchInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      stepSearch(event.shiftKey ? -1 : 1);
+    }
+  });
+  app
+    .querySelector<HTMLElement>("[data-search-prev]")
+    ?.addEventListener("click", () => stepSearch(-1));
+  app
+    .querySelector<HTMLElement>("[data-search-next]")
+    ?.addEventListener("click", () => stepSearch(1));
+  app
+    .querySelector<HTMLElement>("[data-search-close]")
+    ?.addEventListener("click", () => closeSearch());
   app.querySelectorAll<HTMLElement>("[data-menu-delete]").forEach((item) => {
     const runDelete = (event: Event) => {
       event.preventDefault();
@@ -319,6 +360,72 @@ function bindEvents() {
     item.addEventListener("pointerdown", runDelete);
     item.addEventListener("click", runDelete);
   });
+}
+
+function openSearch() {
+  if (!state.activeId) return;
+  updateSearch(state, state.activeId, (current) => ({
+    ...current,
+    open: true,
+    focusToken: current.focusToken + 1,
+  }));
+  render({ focusSearch: true, selectSearchText: true });
+}
+
+function closeSearch() {
+  if (!state.activeId) return;
+  updateSearch(state, state.activeId, (current) => ({
+    ...current,
+    open: false,
+  }));
+  render({ focusEditor: true });
+}
+
+function setSearchQuery(query: string) {
+  if (!state.activeId) return;
+  updateSearch(state, state.activeId, (current) => ({
+    ...current,
+    query,
+    currentIndex: 0,
+  }));
+  render({ focusSearch: true });
+}
+
+function stepSearch(direction: 1 | -1) {
+  if (!state.activeId) return;
+  const content = state.drafts.get(state.activeId)?.content ?? "";
+  const current = activeSearchFor(state, state.activeId);
+  const matches = findTextMatches(content, current.query);
+  if (matches.length === 0) return;
+  updateSearch(state, state.activeId, (search) => ({
+    ...search,
+    currentIndex:
+      (search.currentIndex + direction + matches.length) % matches.length,
+  }));
+  render({ focusSearch: true });
+}
+
+function selectActiveSearchMatch() {
+  if (!state.activeId) return;
+  const editor = app.querySelector<HTMLTextAreaElement>(".editor");
+  if (!editor) return;
+  const search = activeSearchFor(state, state.activeId);
+  const matches = findTextMatches(editor.value, search.query);
+  const match = matches[search.currentIndex] ?? matches[0];
+  if (!match) return;
+  editor.focus({ preventScroll: true });
+  editor.setSelectionRange(match.start, match.end);
+}
+
+function focusSearchInput(selectText: boolean) {
+  const input = app.querySelector<HTMLInputElement>("[data-search-input]");
+  if (!input) return;
+  input.focus({ preventScroll: true });
+  if (selectText) {
+    input.select();
+  } else {
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
 }
 
 function focusEditor() {
@@ -471,6 +578,12 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (commonMod && event.key.toLowerCase() === "f") {
+    event.preventDefault();
+    openSearch();
+    return;
+  }
+
   if (event.key === "Escape" && state.menu) {
     state.menu = null;
     render();
@@ -480,6 +593,14 @@ window.addEventListener("keydown", (event) => {
     state.helpOpen = false;
     render();
     return;
+  }
+  if (event.key === "Escape" && state.activeId) {
+    const search = activeSearchFor(state, state.activeId);
+    if (search.open) {
+      event.preventDefault();
+      closeSearch();
+      return;
+    }
   }
 
   if (event.key === "Tab" && event.ctrlKey) {

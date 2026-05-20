@@ -42,6 +42,24 @@ export interface TextEdit {
   selectionEnd: number;
 }
 
+export interface TextMatch {
+  start: number;
+  end: number;
+}
+
+export function findTextMatches(value: string, query: string): TextMatch[] {
+  if (query.length === 0) return [];
+  const lowerValue = value.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const matches: TextMatch[] = [];
+  let index = lowerValue.indexOf(lowerQuery);
+  while (index !== -1) {
+    matches.push({ start: index, end: index + query.length });
+    index = lowerValue.indexOf(lowerQuery, index + query.length);
+  }
+  return matches;
+}
+
 const INDENT = "    ";
 
 export function indentWithSpaces(
