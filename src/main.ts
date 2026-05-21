@@ -578,7 +578,13 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (commonMod && event.key.toLowerCase() === "f") {
+  if (
+    event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey &&
+    event.key.toLowerCase() === "f"
+  ) {
     event.preventDefault();
     openSearch();
     return;
