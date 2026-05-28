@@ -144,7 +144,7 @@ button {
 
 .icon-button,
 .tab-close,
-.primary {
+.empty-create {
   display: inline-grid;
   place-items: center;
   height: 28px;
@@ -158,7 +158,7 @@ button {
 
 .icon-button:hover,
 .tab-close:hover,
-.primary:hover {
+.empty-create:hover {
   background: var(--button-hover);
 }
 
@@ -441,9 +441,23 @@ button {
   place-items: center;
 }
 
-.primary {
-  height: 32px;
-  padding: 0 12px;
+.empty-create {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--button) 72%, transparent);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.empty-create:hover {
+  border-color: var(--active-line);
+  color: var(--text);
+  background: var(--active);
 }
 
 .statusbar {
