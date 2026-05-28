@@ -33,7 +33,15 @@ export function renderShell(state: AppState): string {
                 <textarea class="editor" spellcheck="true" aria-label="Memo content" placeholder="Write in markdown...">${escapeHtml(
                   draft?.content ?? "",
                 )}</textarea>`
-              : `<div class="empty"><button class="empty-create" data-action="new" title="New memo" aria-label="New memo">＋</button></div>`
+              : `<div class="empty">
+                  <button class="empty-create" data-action="new" aria-label="New memo">
+                    <span class="empty-create-icon" aria-hidden="true">＋</span>
+                    <span class="empty-create-copy">
+                      <span class="empty-create-title">New memo</span>
+                      <span class="empty-create-subtitle">Start writing</span>
+                    </span>
+                  </button>
+                </div>`
           }
         </section>
         <div class="statusbar">

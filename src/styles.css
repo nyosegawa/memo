@@ -439,25 +439,79 @@ button {
 .empty {
   display: grid;
   place-items: center;
+  padding: 28px;
 }
 
 .empty-create {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0;
-  border-color: color-mix(in srgb, var(--line) 72%, transparent);
-  border-radius: 8px;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--button) 72%, transparent);
-  font-size: 19px;
-  line-height: 1;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  width: min(260px, 100%);
+  height: 66px;
+  padding: 0 15px;
+  border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  border-radius: 12px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 86%, var(--button));
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--shadow) 58%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 52%, transparent);
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .empty-create:hover {
   border-color: var(--active-line);
+  background: color-mix(in srgb, var(--active) 72%, var(--surface));
+  box-shadow:
+    0 15px 36px color-mix(in srgb, var(--shadow) 70%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
+  transform: translateY(-1px);
+}
+
+.empty-create:active {
+  transform: translateY(0);
+}
+
+.empty-create-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--active-line) 46%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--active) 62%, var(--surface));
   color: var(--text);
-  background: var(--active);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.empty-create-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.empty-create-title,
+.empty-create-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-create-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.empty-create-subtitle {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .statusbar {
