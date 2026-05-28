@@ -55,11 +55,20 @@ export interface DragState {
   y: number;
 }
 
-export interface MenuState {
-  id: string;
-  x: number;
-  y: number;
-}
+export type MenuState =
+  | {
+      kind: "memo";
+      id: string;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: "tab";
+      id: string;
+      index: number;
+      x: number;
+      y: number;
+    };
 
 export interface AppState {
   memos: MemoSummary[];

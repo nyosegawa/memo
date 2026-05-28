@@ -1,5 +1,7 @@
 import * as api from "./app/api";
 import {
+  closeOtherTabIds,
+  closeRightTabIds,
   findTextMatches,
   indentWithSpaces,
   moveItem,
@@ -26,6 +28,10 @@ import "./styles.css";
 
 const DRAG_THRESHOLD_PX = 4;
 const SAVE_DELAY_MS = 240;
+const MENU_SIZES = {
+  memo: { width: 132, height: 40 },
+  tab: { width: 238, height: 236 },
+} as const;
 
 const app = mustQuery<HTMLDivElement>("#app");
 const state = createInitialState();
@@ -172,6 +178,40 @@ async function closeTab(id: string) {
   state.scrollTops.delete(id);
 }
 
+async function closeTabs(ids: readonly string[], activeId: string | null) {
+  preserveActiveScrollTop();
+  const closedIds = state.openTabs.filter((id) => !ids.includes(id));
+  for (const id of closedIds) {
+    await saveMemo(id);
+    state.scrollTops.delete(id);
+  }
+  state.openTabs = [...ids];
+  state.activeId =
+    activeId && state.openTabs.includes(activeId) ? activeId : null;
+  await persistTabs();
+  render();
+  if (state.activeId) {
+    await ensureDraft(state.activeId);
+    render({ focusEditor: true });
+  }
+}
+
+async function closeOtherTabs(id: string) {
+  await closeTabs(closeOtherTabIds(state.openTabs, id), id);
+}
+
+async function closeTabsToRight(id: string) {
+  const nextTabs = closeRightTabIds(state.openTabs, id);
+  await closeTabs(
+    nextTabs,
+    state.activeId && nextTabs.includes(state.activeId) ? state.activeId : id,
+  );
+}
+
+async function closeAllTabs() {
+  await closeTabs([], null);
+}
+
 async function closeCurrentWindow() {
   await flushSaves();
   await api.hideMainWindow();
@@ -208,6 +248,15 @@ async function toggleTheme() {
   applyTheme(state);
   renderThemeButton(app, state);
   await api.persistTheme(state.theme);
+}
+
+async function copyMemoPath(id: string) {
+  const path = await api.getMemoPath(id);
+  await navigator.clipboard.writeText(path);
+}
+
+async function revealMemo(id: string) {
+  await api.revealMemoInFileManager(id);
 }
 
 async function reorderMemos(fromIndex: number, insertAt: number) {
@@ -278,8 +327,11 @@ function bindEvents() {
       event.preventDefault();
       const id = row.dataset.memoId;
       if (!id) return;
-      state.menu = clampMenu(event.clientX, event.clientY);
-      state.menu.id = id;
+      state.menu = {
+        kind: "memo",
+        id,
+        ...clampMenu(event.clientX, event.clientY, MENU_SIZES.memo),
+      };
       render();
     });
   });
@@ -302,6 +354,19 @@ function bindEvents() {
     tab.addEventListener("pointerdown", (event) =>
       beginDrag(dragContext(), event, "tab", tab),
     );
+    tab.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      const id = tab.dataset.tabId;
+      const index = Number(tab.dataset.index);
+      if (!id || !Number.isFinite(index)) return;
+      state.menu = {
+        kind: "tab",
+        id,
+        index,
+        ...clampMenu(event.clientX, event.clientY, MENU_SIZES.tab),
+      };
+      render();
+    });
   });
   const editor = app.querySelector<HTMLTextAreaElement>(".editor");
   editor?.addEventListener("keydown", (event) => {
@@ -349,9 +414,12 @@ function bindEvents() {
     .querySelector<HTMLElement>("[data-search-close]")
     ?.addEventListener("click", () => closeSearch());
   app.querySelectorAll<HTMLElement>("[data-menu-delete]").forEach((item) => {
+    let consumed = false;
     const runDelete = (event: Event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (consumed) return;
+      consumed = true;
       const id = item.dataset.menuDelete;
       state.menu = null;
       render();
@@ -359,6 +427,47 @@ function bindEvents() {
     };
     item.addEventListener("pointerdown", runDelete);
     item.addEventListener("click", runDelete);
+  });
+  bindMenuAction("[data-menu-close]", (item) => {
+    const id = item.dataset.menuClose;
+    if (id) void closeTab(id);
+  });
+  bindMenuAction("[data-menu-close-others]", (item) => {
+    const id = item.dataset.menuCloseOthers;
+    if (id) void closeOtherTabs(id);
+  });
+  bindMenuAction("[data-menu-close-right]", (item) => {
+    const id = item.dataset.menuCloseRight;
+    if (id) void closeTabsToRight(id);
+  });
+  bindMenuAction("[data-menu-close-all]", () => {
+    void closeAllTabs();
+  });
+  bindMenuAction("[data-menu-copy-path]", (item) => {
+    const id = item.dataset.menuCopyPath;
+    if (id) void copyMemoPath(id);
+  });
+  bindMenuAction("[data-menu-reveal]", (item) => {
+    const id = item.dataset.menuReveal;
+    if (id) void revealMemo(id);
+  });
+}
+
+function bindMenuAction(selector: string, action: (item: HTMLElement) => void) {
+  app.querySelectorAll<HTMLElement>(selector).forEach((item) => {
+    let consumed = false;
+    const run = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (consumed) return;
+      if (item.matches(":disabled")) return;
+      consumed = true;
+      state.menu = null;
+      render();
+      action(item);
+    };
+    item.addEventListener("pointerdown", run);
+    item.addEventListener("click", run);
   });
 }
 
@@ -543,14 +652,15 @@ function dragContext() {
   };
 }
 
-function clampMenu(x: number, y: number): { id: string; x: number; y: number } {
-  const width = 132;
-  const height = 40;
+function clampMenu(
+  x: number,
+  y: number,
+  size: { width: number; height: number },
+): { x: number; y: number } {
   const margin = 8;
   return {
-    id: "",
-    x: Math.min(Math.max(margin, x), window.innerWidth - width - margin),
-    y: Math.min(Math.max(margin, y), window.innerHeight - height - margin),
+    x: Math.min(Math.max(margin, x), window.innerWidth - size.width - margin),
+    y: Math.min(Math.max(margin, y), window.innerHeight - size.height - margin),
   };
 }
 
@@ -615,23 +725,31 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  const key = event.key.toLowerCase();
   if (
     event.metaKey &&
     !event.ctrlKey &&
     !event.altKey &&
     !event.shiftKey &&
-    event.key.toLowerCase() === "n"
+    key === "n"
   ) {
     event.preventDefault();
     void createMemo();
-    return;
-  } else if (commonMod && event.key.toLowerCase() === "w") {
+  } else if (commonMod && !event.altKey && !event.shiftKey && key === "w") {
     event.preventDefault();
     if (state.activeId) {
       void closeTab(state.activeId);
     } else {
       void closeCurrentWindow();
     }
+    return;
+  } else if (commonMod && event.altKey && !event.shiftKey && key === "w") {
+    event.preventDefault();
+    if (state.activeId) void closeOtherTabs(state.activeId);
+    return;
+  } else if (commonMod && !event.altKey && event.shiftKey && key === "w") {
+    event.preventDefault();
+    void closeAllTabs();
     return;
   }
 
@@ -640,6 +758,12 @@ window.addEventListener("keydown", (event) => {
   if (commonMod && event.key === "Backspace") {
     event.preventDefault();
     void deleteActiveMemo();
+  } else if (commonMod && event.shiftKey && !event.altKey && key === "c") {
+    event.preventDefault();
+    if (state.activeId) void copyMemoPath(state.activeId);
+  } else if (commonMod && event.shiftKey && !event.altKey && key === "r") {
+    event.preventDefault();
+    if (state.activeId) void revealMemo(state.activeId);
   } else if (commonMod && /^[1-9]$/.test(event.key)) {
     event.preventDefault();
     activateTabIndex(Number(event.key) - 1);

@@ -158,9 +158,41 @@ function themeButton(state: AppState): string {
 
 function contextMenu(state: AppState): string {
   if (!state.menu) return "";
+  if (state.menu.kind === "memo") {
+    return `
+      <div class="context-menu" style="left: ${state.menu.x}px; top: ${state.menu.y}px" role="menu">
+        <button class="context-item danger" data-menu-delete="${state.menu.id}" role="menuitem">Delete</button>
+      </div>
+    `;
+  }
+  const hasRight = state.menu.index < state.openTabs.length - 1;
+  const hasOthers = state.openTabs.length > 1;
   return `
-    <div class="context-menu" style="left: ${state.menu.x}px; top: ${state.menu.y}px">
-      <button class="context-item danger" data-menu-delete="${state.menu.id}">Delete</button>
+    <div class="context-menu context-menu-tab" style="left: ${state.menu.x}px; top: ${state.menu.y}px" role="menu">
+      <button class="context-item" data-menu-close="${state.menu.id}" role="menuitem">
+        <span>Close tab</span>
+        <span class="context-shortcut" aria-hidden="true">⌘W</span>
+      </button>
+      <button class="context-item" data-menu-close-others="${state.menu.id}" role="menuitem"${hasOthers ? "" : " disabled"}>
+        <span>Close other tabs</span>
+        <span class="context-shortcut" aria-hidden="true">⌘⌥W</span>
+      </button>
+      <button class="context-item" data-menu-close-right="${state.menu.id}" role="menuitem"${hasRight ? "" : " disabled"}>
+        <span>Close tabs to the right</span>
+      </button>
+      <button class="context-item" data-menu-close-all role="menuitem">
+        <span>Close all tabs</span>
+        <span class="context-shortcut" aria-hidden="true">⌘⇧W</span>
+      </button>
+      <div class="context-divider"></div>
+      <button class="context-item" data-menu-copy-path="${state.menu.id}" role="menuitem">
+        <span>Copy path</span>
+        <span class="context-shortcut" aria-hidden="true">⌘⇧C</span>
+      </button>
+      <button class="context-item" data-menu-reveal="${state.menu.id}" role="menuitem">
+        <span>Show in file manager</span>
+        <span class="context-shortcut" aria-hidden="true">⌘⇧R</span>
+      </button>
     </div>
   `;
 }
@@ -178,6 +210,10 @@ function shortcutHelp(state: AppState): string {
           ${shortcutRow("New memo", ["⌘", "N"])}
           ${shortcutRow("Find in editor", ["⌘", "F"])}
           ${shortcutRow("Close tab", ["⌘", "W"])}
+          ${shortcutRow("Close other tabs", ["⌘", "⌥", "W"])}
+          ${shortcutRow("Close all tabs", ["⌘", "⇧", "W"])}
+          ${shortcutRow("Copy memo path", ["⌘", "⇧", "C"])}
+          ${shortcutRow("Show in file manager", ["⌘", "⇧", "R"])}
           ${shortcutRow("Next tab", ["⌃", "Tab"])}
           ${shortcutRow("Previous tab", ["⌃", "⇧", "Tab"])}
           ${shortcutRow("Jump to tab", ["⌘", "1…9"])}

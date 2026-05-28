@@ -199,6 +199,12 @@ impl MemoStore {
         self.persist(&state)
     }
 
+    pub(crate) fn memo_file_path(&self, id: &str) -> Result<PathBuf, String> {
+        let state = self.inner.lock().map_err(|err| err.to_string())?;
+        let record = find_record(&state, id)?;
+        Ok(self.memo_path(record))
+    }
+
     fn snapshot_locked(&self, state: &PersistedState) -> Result<AppSnapshot, String> {
         let memos = state
             .memos

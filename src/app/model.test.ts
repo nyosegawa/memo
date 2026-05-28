@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  closeOtherTabIds,
+  closeRightTabIds,
   findTextMatches,
   indentWithSpaces,
   moveItem,
@@ -55,6 +57,19 @@ describe("tab persistence model", () => {
 
   it("uses null when there are no open tabs", () => {
     expect(resolveActiveId("x", [])).toBeNull();
+  });
+
+  it("keeps only the requested tab when closing other tabs", () => {
+    expect(closeOtherTabIds(["a", "b", "c"], "b")).toEqual(["b"]);
+  });
+
+  it("keeps tabs through the requested tab when closing tabs to the right", () => {
+    expect(closeRightTabIds(["a", "b", "c"], "b")).toEqual(["a", "b"]);
+  });
+
+  it("leaves tabs unchanged when tab close helpers receive an unknown id", () => {
+    expect(closeOtherTabIds(["a", "b"], "x")).toEqual(["a", "b"]);
+    expect(closeRightTabIds(["a", "b"], "x")).toEqual(["a", "b"]);
   });
 });
 

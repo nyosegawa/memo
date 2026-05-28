@@ -1,3 +1,5 @@
+use std::{path::Path, process::Command};
+
 use tauri::{AppHandle, Manager, State};
 
 use crate::store::{AppSnapshot, MemoDocument, MemoStore, MemoSummary, Theme};
@@ -55,9 +57,50 @@ pub(crate) fn set_theme(theme: Theme, store: State<'_, MemoStore>) -> Result<(),
 }
 
 #[tauri::command]
+pub(crate) fn memo_path(id: String, store: State<'_, MemoStore>) -> Result<String, String> {
+    Ok(store.memo_file_path(&id)?.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+pub(crate) fn reveal_memo_in_file_manager(
+    id: String,
+    store: State<'_, MemoStore>,
+) -> Result<(), String> {
+    let path = store.memo_file_path(&id)?;
+    reveal_in_file_manager(&path)
+}
+
+#[tauri::command]
 pub(crate) fn hide_main_window(app: AppHandle) -> Result<(), String> {
     let Some(main_window) = app.get_webview_window("main") else {
         return Ok(());
     };
     window::hide_window(&main_window)
+}
+
+fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let status = Command::new("open")
+        .arg("-R")
+        .arg(path)
+        .status()
+        .map_err(|err| err.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    let status = Command::new("explorer")
+        .arg(format!("/select,{}", path.display()))
+        .status()
+        .map_err(|err| err.to_string())?;
+
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
+    let status = Command::new("xdg-open")
+        .arg(path.parent().unwrap_or(path))
+        .status()
+        .map_err(|err| err.to_string())?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("failed to reveal memo in file manager".to_string())
+    }
 }

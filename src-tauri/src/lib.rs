@@ -27,6 +27,8 @@ pub fn run() {
             commands::reorder_memos,
             commands::persist_tabs,
             commands::set_theme,
+            commands::memo_path,
+            commands::reveal_memo_in_file_manager,
             commands::hide_main_window,
         ])
         .on_window_event(window::handle_window_event)

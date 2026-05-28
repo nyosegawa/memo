@@ -36,6 +36,23 @@ export function resolveActiveId(
   return openTabs[0] ?? null;
 }
 
+export function closeOtherTabIds(
+  openTabs: readonly string[],
+  id: string,
+): string[] {
+  if (!openTabs.includes(id)) return [...openTabs];
+  return openTabs.filter((openId) => openId === id);
+}
+
+export function closeRightTabIds(
+  openTabs: readonly string[],
+  id: string,
+): string[] {
+  const index = openTabs.indexOf(id);
+  if (index === -1) return [...openTabs];
+  return openTabs.slice(0, index + 1);
+}
+
 export interface TextEdit {
   value: string;
   selectionStart: number;

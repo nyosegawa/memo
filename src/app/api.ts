@@ -43,6 +43,14 @@ export function persistTheme(theme: Theme): Promise<void> {
   return cmd<void>("set_theme", { theme });
 }
 
+export function getMemoPath(id: string): Promise<string> {
+  return cmd<string>("memo_path", { id });
+}
+
+export function revealMemoInFileManager(id: string): Promise<void> {
+  return cmd<void>("reveal_memo_in_file_manager", { id });
+}
+
 export function hideMainWindow(): Promise<void> {
   return cmd<void>("hide_main_window");
 }
