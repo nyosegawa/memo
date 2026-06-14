@@ -43,13 +43,21 @@ Near misses:
 
 ## Specify Checkpoint
 
-Ask one question at a time until the feature can be specified, researched, planned, and validated. Each question must use `A.`, `B.`, `C.`, `D.` choices, exactly one recommended choice, and `D.` for custom input. Update the working understanding after each answer.
+Planning starts with a short user conversation. Before creating artifacts, ask the next most useful clarification question. Ask one question at a time. Each question uses `A.`, `B.`, `C.`, `D.` choices, has exactly one recommended choice, and uses `D.` for custom input.
 
-Target scope, UX, data/persistence, compatibility, security/privacy, validation, and completion criteria. Record final answers, selected choices, custom input, assumptions, unresolved tradeoffs, and the clarification log in `spec.md`. Do not leave `[NEEDS CLARIFICATION: ...]` markers before planning.
+Continue until every planning-relevant ambiguity is resolved. A planning-relevant ambiguity is anything that could change user-visible behavior, implementation scope, validation expectations, completion criteria, data or persistence impact, compatibility expectations, security or privacy impact, rollout expectations, risk level, phase breakdown, or acceptance criteria.
+
+When the user has already provided enough detail, ask a confirmation-shaped question that lets them choose the intended default or override it. For small or obvious requests, use the question to confirm the default interpretation instead of expanding scope. Small details outside behavior, scope, validation, risk, phases, and acceptance criteria can be captured as assumptions or minor open questions.
+
+Update the working understanding after each answer. Record all answers, selected choices, custom input, assumptions, and the full clarification log in `spec.md`. Do not leave `[NEEDS CLARIFICATION: ...]` markers before planning.
 
 ## Research Checkpoint
 
-Derive research questions from `spec.md`, split them into independent lanes, and assign lanes to subagents. Standard lanes are:
+Before writing `plan.md`, run subagent-based research. Research starts with a short user conversation to align on research depth.
+
+Derive research questions from `spec.md`. Before assigning subagents, ask one research-depth question using `A.`, `B.`, `C.`, `D.` choices, exactly one recommended choice, and `D.` for custom research direction. Use the answer to choose research lanes, subagent count, whether to include web/current-state research, and whether additional rounds are useful. Default to the lightest research level that can produce a reliable plan, and make that default the recommended choice.
+
+Split research questions into independent lanes and assign lanes to subagents. Run lanes in parallel. Standard lanes are:
 
 - Existing implementation and ownership.
 - Repo guidance and constraints.
@@ -59,7 +67,9 @@ Derive research questions from `spec.md`, split them into independent lanes, and
 - Migration/compatibility/security risks.
 - Prior artifacts or similar features.
 
-If research scope needs user direction, ask one labeled-choice question with one recommended choice and `D.` custom input. Record questions, lanes, subagent results, sources, skipped lanes, additional rounds, remaining unknowns, and decisions in `research.md`.
+Include web/current-state research when external facts, current behavior, packages, APIs, platforms, best practices, or comparisons affect the plan. Add rounds when findings conflict, important questions remain, or design choices lack evidence.
+
+Synthesize subagent results into `plan.md` decisions. Record questions, selected research depth, lanes, subagent results, sources, skipped lanes, additional rounds, remaining unknowns, and decisions in `research.md`.
 
 ## Memo Repo Guidance
 

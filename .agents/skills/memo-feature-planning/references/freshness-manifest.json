@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-14T07:52:08.181Z",
+  "generatedAt": "2026-06-14T07:59:42.794Z",
   "note": "Hashes cover watched repo inputs and generated skill files. This manifest intentionally excludes itself.",
   "files": [
     {
@@ -91,7 +91,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/SKILL.md",
       "required": true,
-      "sha256": "75db906a8b199c014b1e4d0bce288e27fdc30418f49d3f1d56af451caabb065f"
+      "sha256": "32f0eda47d7c65da6fdb043decd024adcb16800c2b6fe79ef7e9e4f2200c6243"
     },
     {
       "path": ".agents/skills/memo-feature-planning/agents/openai.yaml",
@@ -101,12 +101,12 @@
     {
       "path": ".agents/skills/memo-feature-planning/assets/spec-template.md",
       "required": true,
-      "sha256": "f5f81731426454fe5d6a5e10113fa0866ef0fd9fa2629b872a51f8bdd3e3de98"
+      "sha256": "5b4fa1ae972421a23fca7caae8476b4969f40f8e66bd3b654f2dc61d2a73cff4"
     },
     {
       "path": ".agents/skills/memo-feature-planning/assets/research-template.md",
       "required": true,
-      "sha256": "fce07e30327703042c5ebd776a3fc1ad9ab7844412a31b72480bedbe727129f0"
+      "sha256": "2472c592f5a72a5f3ca9c35ecdcf54e8e81e814369af370218f11e8e6adeb930"
     },
     {
       "path": ".agents/skills/memo-feature-planning/assets/plan-template.md",
@@ -136,7 +136,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/references/artifact-contract.md",
       "required": true,
-      "sha256": "b95d86244061945490784378bb7cc8cf5f5dc89d63ca585bfe4205021dda6a6c"
+      "sha256": "77520a672b345674142d553d763fad333cb1bf7c137bcb401a55c25e3b9c0118"
     },
     {
       "path": ".agents/skills/memo-feature-planning/scripts/check-freshness.mjs",
@@ -146,7 +146,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/scripts/validate-artifacts.mjs",
       "required": true,
-      "sha256": "6b3fa11ab502f95a18f12a70a8ccf26ebf5f7acd0b0ec068b85cd3f452232a57"
+      "sha256": "eee205f7f5545171135111fb4ce5a7102d4af1b977cc8840738ab330899a0ce3"
     }
   ]
 }

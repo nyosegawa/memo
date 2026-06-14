@@ -38,7 +38,7 @@
 
 ## Clarification Log
 
-- <YYYY-MM-DD>: Specify Checkpoint answer summary, selected choices, custom input, assumptions, and unresolved tradeoffs.
+- <YYYY-MM-DD>: Full Specify Checkpoint log with answers, selected choices, custom input, assumptions, and unresolved tradeoffs.
 
 ## Quality Checklist
 

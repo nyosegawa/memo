@@ -27,6 +27,7 @@ const required = {
     "# Research:",
     "## Freshness Check",
     "## Research Questions",
+    "## Selected Research Depth",
     "## Subagent Research Plan",
     "## Subagent Results",
     "## Repository Context",

@@ -36,6 +36,7 @@ Required sections:
 - `# Research: <feature title>`
 - `## Freshness Check`
 - `## Research Questions`
+- `## Selected Research Depth`
 - `## Subagent Research Plan`
 - `## Subagent Results`
 - `## Repository Context`
@@ -56,6 +57,7 @@ Rules:
 
 - Record freshness command and result.
 - Record inspected repo guidance with repository-relative paths.
+- Record the selected research depth, recommended choice, and how it determines lanes, subagent count, web/current-state research, and additional rounds.
 - Record lanes, assigned topics, subagent results, sources, and decisions.
 - Use current web research for external APIs, packages, laws, pricing, schedules, standards, or product behavior that affect the plan.
 - Explain skipped lanes.

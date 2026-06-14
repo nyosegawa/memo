@@ -9,6 +9,12 @@
 
 - <Question 1>
 
+## Selected Research Depth
+
+- Choice: <A/B/C/D and label>
+- Recommended choice: <A/B/C/D and label>
+- Rationale: <How this depth determines lanes, subagent count, web/current-state research, and additional rounds>
+
 ## Subagent Research Plan
 
 - Lane 1: <topic, assigned scope, expected sources>

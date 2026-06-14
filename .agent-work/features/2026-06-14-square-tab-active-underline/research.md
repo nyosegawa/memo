@@ -12,6 +12,12 @@
 - Can the requested change remain visual-only without touching tab state, persistence, or drag logic?
 - What validation and QA are proportionate for a user-facing CSS change?
 
+## Selected Research Depth
+
+- Choice: legacy planning artifact created before research-depth selection was required.
+- Recommended choice: not recorded in the original planning run.
+- Rationale: The original planning run used a single existing-implementation and QA-risk lane because the feature was a small visual CSS change with no external package, API, migration, persistence, or security dependency.
+
 ## Subagent Research Plan
 
 - Lane 1: Existing tab UI implementation and QA risks. Inspect tab render/CSS/drag ownership and report likely approach. Expected sources: `src/ui/render.ts`, `src/styles.css`, `src/interaction/drag.ts`.
