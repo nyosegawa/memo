@@ -34,8 +34,8 @@ Implementation: Updated `src/styles.css` only. Tabs now use `border-radius: 0`; 
 Validation: Passed `npm run lint`, `npm run typecheck`, `npm run test:run` (22 tests), `(cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --lib)` (4 Rust tests), and `npm run tauri build`.
 Review: Phase-level subagent review found one P2 issue: active underline pseudo-element needed `pointer-events: none` to preserve bottom-edge activation. Fixed and reran validation/QA.
 Browser QA: Localhost CSS harness using real `src/styles.css` confirmed light/dark active and inactive tabs have `border-radius: 0px`; active tab has `box-shadow: none`; active underline is 3px with `--active-line`; tab height remains 35px; grid columns remain `154px 26px`; scroll container remains `overflow-x: auto` with `scrollWidth > clientWidth`; active underline has `pointer-events: none`; bottom-edge click targets the active tab button.
-Commit/Push: Pending implementation commit and push.
-PR/CI: Pending PR creation and CI watch.
+Commit/Push: Implementation commit `56a0c93` (`Implement square tab active underline`) was pushed to `origin/codex/square-tab-active-underline`.
+PR/CI: PR created at `https://github.com/nyosegawa/memo/pull/3`; CI watch pending after evidence update.
 Notes: Replaced `/Applications/Memo.app` with `src-tauri/target/release/bundle/macos/Memo.app` after the final build and verified the installed `Memo` process launches.
 
 ## Blockers
