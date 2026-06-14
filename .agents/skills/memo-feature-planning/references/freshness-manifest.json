@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-14T07:20:02.855Z",
+  "note": "Hashes cover watched repo inputs and generated skill files. This manifest intentionally excludes itself.",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "required": true,
+      "sha256": "bf4a8f0a949fdff7e1debef71e71d4cff7070c71938ad613f5663d72cc3df0a4"
+    },
+    {
+      "path": "README.md",
+      "required": true,
+      "sha256": "4525e96330d0ce58404b3f7b8082cbdea8f048d07c73af2c3922af4f94473d5f"
+    },
+    {
+      "path": "package.json",
+      "required": true,
+      "sha256": "c93bc315a4afe253e9600c3e6478a7c04b1b8bb8cd1d377905fcdb25850591d2"
+    },
+    {
+      "path": "package-lock.json",
+      "required": true,
+      "sha256": "06d5173c2f3bd9957528f3d35f0f101cc5fe6c90b0f25eadfbc592350dfc9c79"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "required": true,
+      "sha256": "7d6a42389a76bdc9fae85a754af65251eb3c11dba548953d64e415f70c2b0364"
+    },
+    {
+      "path": "src-tauri/Cargo.lock",
+      "required": true,
+      "sha256": "14c2c11fd33edbfd5e17b89e483b3bac3e9c22852972085b5b44f182bff6dd08"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "required": true,
+      "sha256": "7787fe8dbda09a97e7aecdd589fd45683f6fe5ac03a17fe5c69363f8c4409e6a"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "required": true,
+      "sha256": "bb6642773b20dab0c74df562e3243dfec564f337d4def71596b526b2849a01f8"
+    },
+    {
+      "path": "src/main.ts",
+      "required": true,
+      "sha256": "7e54a8d857c780f03d5cf72e8cacad09d768f4c7515df10fffb1684a4b8f3181"
+    },
+    {
+      "path": "src/app/model.ts",
+      "required": true,
+      "sha256": "0300955749d759a3d64114b561b495d966187b7270884a2cef8c949c25ae6bd8"
+    },
+    {
+      "path": "src/app/state.ts",
+      "required": true,
+      "sha256": "19d128afff4b0a48fdd347c577aa55b36587cb002fb6ce9c485cd1856b8b6444"
+    },
+    {
+      "path": "src/interaction/drag.ts",
+      "required": true,
+      "sha256": "bf1d5397f93e2fc6fd1a4d0bf315d987a23d6ce1875e053f635f19ad93515689"
+    },
+    {
+      "path": "src/ui/render.ts",
+      "required": true,
+      "sha256": "3da21d1c3252604c57bb2a587a0b26f64b4ec4a9d48316064e51401b89045585"
+    },
+    {
+      "path": "src/ui/html.ts",
+      "required": true,
+      "sha256": "e5dc29d77f0268ce46e0719ba9c3053687abb4eef73a989670a28f0b5c9c4a04"
+    },
+    {
+      "path": "src-tauri/src/store.rs",
+      "required": true,
+      "sha256": "41633ef995190c661df446f35750118ed1df2350fcd9862a233f75b4c10f3736"
+    },
+    {
+      "path": "src-tauri/src/commands.rs",
+      "required": true,
+      "sha256": "360c77ac0018e0a98a32f9a55f1a200b9d1b113a00cf6ce008752580530261ba"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "required": true,
+      "sha256": "a44457eea9846d076e923513dbed95eba885751b7be6c01db2ae6fdc9738209e"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/SKILL.md",
+      "required": true,
+      "sha256": "f2ce4d11d0e7738b25399921c72a7ff4266fd6c1d4ecc1893636bab3d9523ff8"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/agents/openai.yaml",
+      "required": true,
+      "sha256": "6d7f04ab3547176776fd389b2c2571d6ee47175c9de2e03a6b3a9e1552bd5eec"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/assets/spec-template.md",
+      "required": true,
+      "sha256": "e2c888f9cc51141d42594d4970b2ae642b8ab565a5ad72eac11eb253e9aa7095"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/assets/research-template.md",
+      "required": true,
+      "sha256": "fce07e30327703042c5ebd776a3fc1ad9ab7844412a31b72480bedbe727129f0"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/assets/plan-template.md",
+      "required": true,
+      "sha256": "47f38fd8b35dbfe799f3769b3d816f233d3e35238aede2d46fb394d2a4c38663"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/assets/todo-template.md",
+      "required": true,
+      "sha256": "7bed5e7d268b360864d01df6536dffe3ed2825123427f4fc6bc5cc97a2481c6d"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/assets/goal-prompt-template.md",
+      "required": true,
+      "sha256": "05e8f700b37ddcce84382c1ce18ecc836391f67b7de7646b27336d5f0006dd4c"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/references/repo-research-summary.md",
+      "required": true,
+      "sha256": "e69a36e08a87d2f63a99b012f4b4ef87b05f3bb5ab377cbce0df383d6212b28d"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/references/freshness-policy.md",
+      "required": true,
+      "sha256": "38232c563c08f302626ed4e9ab0ba8655db3c133b08f79ddf0c32c88fcc3ffd9"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/references/artifact-contract.md",
+      "required": true,
+      "sha256": "b95d86244061945490784378bb7cc8cf5f5dc89d63ca585bfe4205021dda6a6c"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/scripts/check-freshness.mjs",
+      "required": true,
+      "sha256": "94215e0e78cd7e4b8c1826518b29ec6a0dd4f7bdf394052a4db4a54d4ad4c79c"
+    },
+    {
+      "path": ".agents/skills/memo-feature-planning/scripts/validate-artifacts.mjs",
+      "required": true,
+      "sha256": "7e72bda5aca6becacd54583dcd0687feebd94fb43032dea5c876c62811c4a21e"
+    }
+  ]
+}
