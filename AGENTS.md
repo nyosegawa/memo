@@ -27,8 +27,3 @@ npm run tauri build     # Release app/dmg bundle
 - For user-facing app changes, unless explicitly told not to, replace `/Applications/Memo.app` with `src-tauri/target/release/bundle/macos/Memo.app` and verify the installed app launches.
 - For repository changes, unless explicitly told not to, commit, push, and watch the GitHub Actions run until it succeeds or fails.
 - When writing a name in a license file, use `{year} Sakasegawa`. Confirm the current year using `date +%Y`.
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-<!-- SPECKIT END -->

@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-14T07:20:02.855Z",
+  "generatedAt": "2026-06-14T07:52:08.181Z",
   "note": "Hashes cover watched repo inputs and generated skill files. This manifest intentionally excludes itself.",
   "files": [
     {
       "path": "AGENTS.md",
       "required": true,
-      "sha256": "bf4a8f0a949fdff7e1debef71e71d4cff7070c71938ad613f5663d72cc3df0a4"
+      "sha256": "b9b2f97965bc3bb054167d56e55761c5fa666e81c258a561ddb9b51b7d0b5517"
     },
     {
       "path": "README.md",
@@ -91,7 +91,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/SKILL.md",
       "required": true,
-      "sha256": "f2ce4d11d0e7738b25399921c72a7ff4266fd6c1d4ecc1893636bab3d9523ff8"
+      "sha256": "75db906a8b199c014b1e4d0bce288e27fdc30418f49d3f1d56af451caabb065f"
     },
     {
       "path": ".agents/skills/memo-feature-planning/agents/openai.yaml",

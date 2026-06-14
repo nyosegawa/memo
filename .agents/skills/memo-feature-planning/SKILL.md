@@ -20,7 +20,6 @@ Near misses:
 
 - If the user asks to implement immediately, do the normal code workflow instead.
 - If the user asks to update this skill itself, use the generic skill-creation workflow first.
-- If the user asks for a Spec Kit `/specify`/`/plan` workflow, use the repo's Spec Kit instructions if present.
 
 ## Workflow
 
