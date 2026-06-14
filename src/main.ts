@@ -1,11 +1,15 @@
 import * as api from "./app/api";
 import {
+  closeEditorHistoryGroup,
   closeOtherTabIds,
   closeRightTabIds,
   findTextMatches,
   indentWithSpaces,
   moveItem,
   outdentWithSpaces,
+  recordEditorHistory,
+  redoEditorHistory,
+  undoEditorHistory,
 } from "./app/model";
 import {
   activeMemo,
@@ -16,6 +20,7 @@ import {
   replaceSummary,
   updateSearch,
 } from "./app/state";
+import type { EditorSnapshot } from "./app/types";
 import { beginDrag } from "./interaction/drag";
 import {
   effectiveTheme,
@@ -35,6 +40,10 @@ const MENU_SIZES = {
 
 const app = mustQuery<HTMLDivElement>("#app");
 const state = createInitialState();
+let pendingEditorInput: {
+  snapshot: EditorSnapshot;
+  inputType: string;
+} | null = null;
 
 interface RenderOptions {
   focusEditor?: boolean;
@@ -377,14 +386,38 @@ function bindEvents() {
     event.preventDefault();
     applyEditorTransform(editor, event.shiftKey ? "outdent" : "indent");
   });
-  editor?.addEventListener("input", () => {
-    if (!state.activeId) return;
-    const draft = state.drafts.get(state.activeId);
-    if (!draft) return;
-    draft.content = editor.value;
-    draft.redoStack = [];
-    scheduleSave(state.activeId);
-    renderSaveState(state);
+  editor?.addEventListener("beforeinput", (event) => {
+    pendingEditorInput = {
+      snapshot: editorSnapshot(editor),
+      inputType: event.inputType,
+    };
+  });
+  editor?.addEventListener("input", (event) => {
+    const before = pendingEditorInput?.snapshot ?? {
+      value: state.activeId
+        ? (state.drafts.get(state.activeId)?.content ?? editor.value)
+        : editor.value,
+      selectionStart: editor.selectionStart,
+      selectionEnd: editor.selectionEnd,
+    };
+    const inputType =
+      pendingEditorInput?.inputType ??
+      (event instanceof InputEvent ? event.inputType : "input");
+    pendingEditorInput = null;
+    commitEditorChange(editor, before, inputType);
+  });
+  editor?.addEventListener("blur", () => {
+    pendingEditorInput = null;
+    const draft = state.activeId ? state.drafts.get(state.activeId) : null;
+    if (draft) closeEditorHistoryGroup(draft.undoStack);
+  });
+  editor?.addEventListener("select", () => {
+    const draft = state.activeId ? state.drafts.get(state.activeId) : null;
+    if (draft) closeEditorHistoryGroup(draft.undoStack);
+  });
+  editor?.addEventListener("compositionstart", () => {
+    const draft = state.activeId ? state.drafts.get(state.activeId) : null;
+    if (draft) closeEditorHistoryGroup(draft.undoStack);
   });
   editor?.addEventListener("scroll", () => preserveActiveScrollTop());
   const searchInput = app.querySelector<HTMLInputElement>(
@@ -561,8 +594,7 @@ function applyEditorTransform(
   transform: "indent" | "outdent",
 ) {
   if (!state.activeId) return;
-  const draft = state.drafts.get(state.activeId);
-  if (!draft) return;
+  if (!state.drafts.has(state.activeId)) return;
   const before = editorSnapshot(editor);
   const edit =
     transform === "indent"
@@ -583,14 +615,10 @@ function applyEditorTransform(
   ) {
     return;
   }
-  draft.undoStack.push(before);
-  draft.redoStack = [];
   editor.value = edit.value;
   editor.selectionStart = edit.selectionStart;
   editor.selectionEnd = edit.selectionEnd;
-  draft.content = edit.value;
-  scheduleSave(state.activeId);
-  renderSaveState(state);
+  commitEditorChange(editor, before, `memo.${transform}`);
 }
 
 function handleEditorUndoRedo(
@@ -607,13 +635,13 @@ function handleEditorUndoRedo(
 
   const draft = state.drafts.get(state.activeId);
   if (!draft) return false;
-  const fromStack = wantsUndo ? draft.undoStack : draft.redoStack;
-  const toStack = wantsUndo ? draft.redoStack : draft.undoStack;
-  const snapshot = fromStack.pop();
-  if (!snapshot) return false;
-
   event.preventDefault();
-  toStack.push(editorSnapshot(editor));
+  closeEditorHistoryGroup(draft.undoStack);
+  const snapshot = wantsUndo
+    ? undoEditorHistory(draft.undoStack, draft.redoStack)
+    : redoEditorHistory(draft.undoStack, draft.redoStack);
+  if (!snapshot) return true;
+
   restoreEditorSnapshot(editor, snapshot);
   draft.content = snapshot.value;
   scheduleSave(state.activeId);
@@ -621,7 +649,29 @@ function handleEditorUndoRedo(
   return true;
 }
 
-function editorSnapshot(editor: HTMLTextAreaElement) {
+function commitEditorChange(
+  editor: HTMLTextAreaElement,
+  before: EditorSnapshot,
+  inputType: string,
+) {
+  if (!state.activeId) return;
+  const draft = state.drafts.get(state.activeId);
+  if (!draft) return;
+  const after = editorSnapshot(editor);
+  recordEditorHistory(
+    draft.undoStack,
+    draft.redoStack,
+    before,
+    after,
+    inputType,
+    Date.now(),
+  );
+  draft.content = after.value;
+  scheduleSave(state.activeId);
+  renderSaveState(state);
+}
+
+function editorSnapshot(editor: HTMLTextAreaElement): EditorSnapshot {
   return {
     value: editor.value,
     selectionStart: editor.selectionStart,

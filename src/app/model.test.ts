@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  closeEditorHistoryGroup,
   closeOtherTabIds,
   closeRightTabIds,
   findTextMatches,
@@ -7,8 +8,12 @@ import {
   moveItem,
   normalizeOpenTabs,
   outdentWithSpaces,
+  recordEditorHistory,
+  redoEditorHistory,
   resolveActiveId,
+  undoEditorHistory,
 } from "./model";
+import type { EditorHistoryEntry, EditorSnapshot } from "./types";
 
 describe("findTextMatches", () => {
   it("finds case-insensitive non-overlapping matches", () => {
@@ -122,5 +127,117 @@ describe("outdentWithSpaces", () => {
       selectionStart: 0,
       selectionEnd: 6,
     });
+  });
+});
+
+describe("editor history", () => {
+  const snapshot = (
+    value: string,
+    selectionStart = value.length,
+    selectionEnd = selectionStart,
+  ): EditorSnapshot => ({ value, selectionStart, selectionEnd });
+
+  it("groups continuous typing into one undo step", () => {
+    const undoStack: EditorHistoryEntry[] = [];
+    const redoStack: EditorHistoryEntry[] = [];
+
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot(""),
+      snapshot("a"),
+      "insertText",
+      100,
+    );
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot("a"),
+      snapshot("ab"),
+      "insertText",
+      200,
+    );
+
+    expect(undoStack).toHaveLength(1);
+    expect(undoEditorHistory(undoStack, redoStack)).toEqual(snapshot(""));
+    expect(redoEditorHistory(undoStack, redoStack)).toEqual(snapshot("ab"));
+  });
+
+  it("keeps paste and typing as separate undo steps", () => {
+    const undoStack: EditorHistoryEntry[] = [];
+    const redoStack: EditorHistoryEntry[] = [];
+
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot(""),
+      snapshot("hello"),
+      "insertFromPaste",
+      100,
+    );
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot("hello"),
+      snapshot("hello!"),
+      "insertText",
+      200,
+    );
+
+    expect(undoStack).toHaveLength(2);
+    expect(undoEditorHistory(undoStack, redoStack)).toEqual(snapshot("hello"));
+    expect(undoEditorHistory(undoStack, redoStack)).toEqual(snapshot(""));
+  });
+
+  it("breaks a typing group after an explicit boundary", () => {
+    const undoStack: EditorHistoryEntry[] = [];
+    const redoStack: EditorHistoryEntry[] = [];
+
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot(""),
+      snapshot("a"),
+      "insertText",
+      100,
+    );
+    closeEditorHistoryGroup(undoStack);
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot("a"),
+      snapshot("ab"),
+      "insertText",
+      200,
+    );
+
+    expect(undoStack).toHaveLength(2);
+    expect(undoEditorHistory(undoStack, redoStack)).toEqual(snapshot("a"));
+  });
+
+  it("clears redo history when a new edit is recorded", () => {
+    const undoStack: EditorHistoryEntry[] = [];
+    const redoStack: EditorHistoryEntry[] = [];
+
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot(""),
+      snapshot("a"),
+      "insertText",
+      100,
+    );
+    expect(undoEditorHistory(undoStack, redoStack)).toEqual(snapshot(""));
+    recordEditorHistory(
+      undoStack,
+      redoStack,
+      snapshot(""),
+      snapshot("b"),
+      "insertText",
+      200,
+    );
+
+    expect(redoStack).toHaveLength(0);
+    expect(redoEditorHistory(undoStack, redoStack)).toBeNull();
   });
 });

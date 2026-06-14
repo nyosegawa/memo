@@ -1,3 +1,5 @@
+import type { EditorHistoryEntry, EditorSnapshot } from "./types";
+
 export interface Identified {
   id: string;
 }
@@ -63,6 +65,8 @@ export interface TextMatch {
   start: number;
   end: number;
 }
+
+export const DEFAULT_HISTORY_GROUP_DELAY_MS = 1200;
 
 export function findTextMatches(value: string, query: string): TextMatch[] {
   if (query.length === 0) return [];
@@ -188,4 +192,85 @@ function shiftSelection(
     }
   }
   return next;
+}
+
+export function recordEditorHistory(
+  undoStack: EditorHistoryEntry[],
+  redoStack: EditorHistoryEntry[],
+  before: EditorSnapshot,
+  after: EditorSnapshot,
+  inputType: string,
+  timestampMs: number,
+  groupDelayMs = DEFAULT_HISTORY_GROUP_DELAY_MS,
+) {
+  if (sameSnapshot(before, after)) return;
+
+  const last = undoStack[undoStack.length - 1];
+  if (
+    last &&
+    canMergeHistoryEntry(last, before, inputType, timestampMs, groupDelayMs)
+  ) {
+    last.after = after;
+    last.timestampMs = timestampMs;
+  } else {
+    undoStack.push({ before, after, inputType, timestampMs });
+  }
+  redoStack.length = 0;
+}
+
+export function closeEditorHistoryGroup(stack: EditorHistoryEntry[]) {
+  const last = stack[stack.length - 1];
+  if (last) last.timestampMs = Number.NEGATIVE_INFINITY;
+}
+
+export function undoEditorHistory(
+  undoStack: EditorHistoryEntry[],
+  redoStack: EditorHistoryEntry[],
+): EditorSnapshot | null {
+  const entry = undoStack.pop();
+  if (!entry) return null;
+  redoStack.push(entry);
+  return entry.before;
+}
+
+export function redoEditorHistory(
+  undoStack: EditorHistoryEntry[],
+  redoStack: EditorHistoryEntry[],
+): EditorSnapshot | null {
+  const entry = redoStack.pop();
+  if (!entry) return null;
+  undoStack.push(entry);
+  return entry.after;
+}
+
+function canMergeHistoryEntry(
+  last: EditorHistoryEntry,
+  before: EditorSnapshot,
+  inputType: string,
+  timestampMs: number,
+  groupDelayMs: number,
+): boolean {
+  return (
+    inputType === last.inputType &&
+    isGroupedInputType(inputType) &&
+    timestampMs - last.timestampMs <= groupDelayMs &&
+    sameSnapshot(last.after, before)
+  );
+}
+
+function isGroupedInputType(inputType: string): boolean {
+  return (
+    inputType === "insertText" ||
+    inputType === "insertCompositionText" ||
+    inputType === "deleteContentBackward" ||
+    inputType === "deleteContentForward"
+  );
+}
+
+function sameSnapshot(a: EditorSnapshot, b: EditorSnapshot): boolean {
+  return (
+    a.value === b.value &&
+    a.selectionStart === b.selectionStart &&
+    a.selectionEnd === b.selectionEnd
+  );
 }

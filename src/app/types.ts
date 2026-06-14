@@ -25,14 +25,21 @@ export interface Draft {
   saveTimer: number | null;
   saving: boolean;
   loaded: boolean;
-  undoStack: EditorSnapshot[];
-  redoStack: EditorSnapshot[];
+  undoStack: EditorHistoryEntry[];
+  redoStack: EditorHistoryEntry[];
 }
 
 export interface EditorSnapshot {
   value: string;
   selectionStart: number;
   selectionEnd: number;
+}
+
+export interface EditorHistoryEntry {
+  before: EditorSnapshot;
+  after: EditorSnapshot;
+  inputType: string;
+  timestampMs: number;
 }
 
 export interface SearchState {
