@@ -21,7 +21,6 @@
   --active: #dceadf;
   --active-line: #8cb494;
   --tab-active: #fffefa;
-  --tab-active-top: #6fa37a;
   --button: #f8f7f2;
   --button-hover: #e8e6dd;
   --danger: #9f2d20;
@@ -40,7 +39,6 @@
   --active: #243b31;
   --active-line: #80ad8c;
   --tab-active: #2b332d;
-  --tab-active-top: #95c7a0;
   --button: #2e322b;
   --button-hover: #3a4036;
   --danger: #ff8a7a;
@@ -63,7 +61,6 @@
     --active: #243b31;
     --active-line: #80ad8c;
     --tab-active: #2b332d;
-    --tab-active-top: #95c7a0;
     --button: #2e322b;
     --button-hover: #3a4036;
     --danger: #ff8a7a;
@@ -278,7 +275,7 @@ button {
   height: 35px;
   border: 1px solid var(--line);
   border-bottom: none;
-  border-radius: 6px 6px 0 0;
+  border-radius: 0;
   background: var(--panel);
   color: color-mix(in srgb, var(--text) 76%, var(--muted));
   -webkit-app-region: no-drag;
@@ -292,9 +289,6 @@ button {
   border-color: var(--active-line);
   background: var(--tab-active);
   color: var(--text);
-  box-shadow:
-    inset 0 3px 0 var(--tab-active-top),
-    0 -1px 0 color-mix(in srgb, var(--tab-active-top) 30%, transparent);
 }
 
 .tab.is-active::after {
@@ -302,9 +296,10 @@ button {
   right: 0;
   bottom: -1px;
   left: 0;
-  height: 1px;
-  background: var(--tab-active);
+  height: 3px;
+  background: var(--active-line);
   content: "";
+  pointer-events: none;
 }
 
 .tab-main {
