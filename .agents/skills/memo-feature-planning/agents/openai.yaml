@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memo Feature Planning"
+  short_description: "Plan Memo features before implementation"
+  default_prompt: "Use $memo-feature-planning to create a validated planning package for this Memo feature before implementation."
