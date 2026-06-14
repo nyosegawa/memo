@@ -45,4 +45,4 @@
 - [ ] User-visible behavior is clear.
 - [ ] Requirements are testable.
 - [ ] Scope is bounded.
-- [ ] No unresolved `[NEEDS CLARIFICATION: ...]` markers remain.
+- [ ] No unresolved clarification markers remain.

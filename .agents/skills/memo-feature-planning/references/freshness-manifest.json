@@ -101,7 +101,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/assets/spec-template.md",
       "required": true,
-      "sha256": "e2c888f9cc51141d42594d4970b2ae642b8ab565a5ad72eac11eb253e9aa7095"
+      "sha256": "f5f81731426454fe5d6a5e10113fa0866ef0fd9fa2629b872a51f8bdd3e3de98"
     },
     {
       "path": ".agents/skills/memo-feature-planning/assets/research-template.md",
@@ -146,7 +146,7 @@
     {
       "path": ".agents/skills/memo-feature-planning/scripts/validate-artifacts.mjs",
       "required": true,
-      "sha256": "7e72bda5aca6becacd54583dcd0687feebd94fb43032dea5c876c62811c4a21e"
+      "sha256": "6b3fa11ab502f95a18f12a70a8ccf26ebf5f7acd0b0ec068b85cd3f452232a57"
     }
   ]
 }

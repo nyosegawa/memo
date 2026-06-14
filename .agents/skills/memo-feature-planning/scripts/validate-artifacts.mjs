@@ -103,7 +103,8 @@ for (const pattern of absolutePathPatterns) {
     errors.push(`artifacts: user-local absolute path found (${match[0]})`);
 }
 
-if (combined.includes("[NEEDS CLARIFICATION:")) {
+const combinedWithoutInlineCode = combined.replace(/`[^`\n]*`/g, "");
+if (/\[NEEDS CLARIFICATION:\s*[^\]]+\]/.test(combinedWithoutInlineCode)) {
   errors.push("artifacts: unresolved clarification marker found");
 }
 
