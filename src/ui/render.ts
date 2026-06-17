@@ -10,7 +10,7 @@ export function renderShell(state: AppState): string {
   return `
     <section class="shell">
       <aside class="sidebar">
-        <div class="sidebar-titlebar"></div>
+        <div class="sidebar-titlebar" data-tauri-drag-region></div>
         <div class="sidebar-head">
           <strong>Memo</strong>
           <div class="toolbar">
@@ -23,7 +23,7 @@ export function renderShell(state: AppState): string {
         </div>
       </aside>
       <section class="workspace">
-        <div class="tabs" data-list="tab">
+        <div class="tabs" data-list="tab" data-tauri-drag-region>
           ${state.openTabs.map((id, index) => tabItem(state, id, index)).join("")}
         </div>
         <section class="editor-wrap">
